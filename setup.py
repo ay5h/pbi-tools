@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='pbi-api-thomas-daughters',
-    version='0.0.3',
+    version='0.0.4',
     packages=find_packages(exclude=['tests*']),
     license='MIT',
     description='Power BI REST API wrapper and other tools',
