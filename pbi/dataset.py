@@ -1,6 +1,7 @@
 import time
 import requests
 from .tools import handle_request
+from .datasource import Datasource
         
 class Dataset:
     def __init__(self, workspace, dataset):

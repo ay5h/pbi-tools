@@ -1,6 +1,8 @@
 import time
 import requests
 from .tools import handle_request
+from .report import Report
+from .dataset import Dataset
         
 class Workspace:
     def __init__(self, id, token):
