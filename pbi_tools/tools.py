@@ -2,6 +2,15 @@ import os
 import zipfile as zf
 from git import Repo
 
+def handle_request(r, stop=True):
+    if not r.ok:
+        message = f'ERROR {r.status_code}: {r.text if r.text else "Unknown error"} when running {r.request.method} {r.url}'
+        
+        if stop: raise SystemExit(message)
+        else: print(message)
+
+    return r.json() if r.content else None
+
 def rebind_report(filepath, connection_string):
     root, filename = os.path.split(filepath)
     base, ext = os.path.splitext(filename)
