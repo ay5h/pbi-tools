@@ -1,1 +1,2 @@
-from . import tools, classes
+from . import tools
+from .classes import *
