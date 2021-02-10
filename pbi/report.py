@@ -21,7 +21,14 @@ class Report:
         }
         r = requests.post(f'https://api.powerbi.com/v1.0/myorg/groups/{self.workspace.id}/reports/{self.id}/Clone', headers=self.workspace.get_headers(), json=payload)
         json = handle_request(r)
-        return Report(self.workspace, json)
+
+        return Report(self.workspace, json) # Return new report object
+
+    def rename(self, new_name):
+        new_report = self.clone(new_name) # Create new report object (API doesn't support rename)
+        self.delete() # Delete old report
+
+        return new_report
 
     def download(self):
         r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.workspace.id}/reports/{self.id}/Export', headers=self.workspace.get_headers())
