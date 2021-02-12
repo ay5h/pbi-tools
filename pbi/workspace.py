@@ -84,3 +84,41 @@ class Workspace:
             else:
                 print(f'Import ERROR: {json.get("error").get("code")} ({json.get("error").get("message")})')
                 break
+
+    def refresh_datasets(self, credentials=None):
+        error = False
+        datasets = [d for d in self.datasets if 'Deployment Aid' not in d.name]
+        
+        for dataset in datasets:
+            try:
+                if dataset.get_refresh_state() == 'Unknown': # Don't trigger refresh if model is already refreshing
+                    print(f'** [{dataset.name}] is already refreshing')
+                else:
+                    print(f'** Reconfiguring [{dataset.name}]')
+                    dataset.take_ownership() # In case someone manually took control post deployment
+
+                    if credentials:
+                        print(f'*** Reauthenticating data sources...') # Reauthenticate as tokens obtained during deployment will have expired
+                        dataset.authenticate(credentials)
+
+                    print(f'*** Starting refresh...') # We check back later for completion
+                    dataset.trigger_refresh()
+
+            except SystemExit as e:
+                print(f'!! ERROR. Triggering refresh failed for [{dataset.name}]. {e}')
+                error = True
+
+        print('* Waiting for models to finish refreshing...')
+        for dataset in datasets:
+            try:
+                refresh_status = dataset.get_refresh_state(wait=True) # Wait for each refresh to complete
+                if refresh_status == 'Completed':
+                    print(f'** Refresh complete for [{dataset.name}]')
+                else:
+                    raise SystemExit(refresh_status)
+
+            except SystemExit as e:
+                print(f'!! ERROR. Refresh failed for [{dataset.name}]. {e}')
+                error = True
+
+        return not error

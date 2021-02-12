@@ -1,4 +1,5 @@
 import time
+import json
 import requests
 from .tools import handle_request
 from .datasource import Datasource
@@ -17,6 +18,19 @@ class Dataset:
         datasources = r.json()['value']
         self.datasources = [Datasource(self, d) for d in datasources]
         return self.datasources
+
+    def authenticate(self, credentials):
+        for datasource in self.get_datasources():
+            server = json.loads(datasource.connection_details).get('server')
+            if server in credentials:
+                cred = credentials.get(server)
+                print(f'*** Updating credentials for {server}')
+                if 'token' in cred:
+                    datasource.update_credentials(cred['token'])
+                elif 'username' in cred:
+                    datasource.update_credentials(cred['username'], cred['password'])
+            else:
+                print(f'*** No credentials provided for {server}')
  
     def trigger_refresh(self):
         r = requests.post(f'https://api.powerbi.com/v1.0/myorg/groups/{self.workspace.id}/datasets/{self.id}/refreshes', headers=self.workspace.get_headers())
