@@ -5,15 +5,17 @@ from .report import Report
 from .dataset import Dataset
         
 class Workspace:
-    def __init__(self, id, token):
+    def __init__(self, id, token, stage=None):
         self.id = id
         self.token = token
+        self.stage = stage # Whether for dev, UAT, prod, etc.
 
         r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups?$filter=contains(id,\'{self.id}\')', headers=self.get_headers())
         handle_request(r)
         self.name = r.json()['value'][0]['name']
 
         self.get_datasets()
+        self.get_reports()
     
     def get_headers(self):
         return {'Authorization': f'Bearer {self.token.get_token()}'}
