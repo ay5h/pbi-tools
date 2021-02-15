@@ -55,8 +55,8 @@ class Workspace:
             if r.get('name') == report_name:
                 return Report(self, r)
 
-    def publish_file(self, filepath, name, extension='.pbix', skipReports=False):
-        params = {'datasetDisplayName': name + extension}
+    def publish_file(self, filepath, name, skipReports=False):
+        params = {'datasetDisplayName': name}
         if skipReports: params['skipReport'] = 'true'
 
         payload = {}
