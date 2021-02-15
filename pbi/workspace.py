@@ -12,7 +12,6 @@ class Workspace:
     def __init__(self, id, token, stage=None):
         self.id = id
         self.token = token
-        self.stage = stage # Whether for dev, UAT, prod, etc.
 
         r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups?$filter=contains(id,\'{self.id}\')', headers=self.get_headers())
         handle_request(r)
@@ -177,7 +176,8 @@ class Workspace:
         # 5. Publish reports (using dummy connection string initially)
         for filepath in report_filepaths: # Import report files
             report_name = name_builder(filepath, **kwargs) if name_builder else os.path.basename(filepath) # Allow custom name formation, default to filename
-        
+            matching_reports = [r for r in self.reports if r.name == os.path.splitext(report_name)[0]] # Look for existing reports
+
             print(f'** Publishing report [{filepath}] as [{report_name}]...') # Alter PBIX file with dummy dataset, in case dataset used during development has since been deleted (we repoint once on service)
             rebind_report(filepath, connection_string)
             new_datasets, new_reports = self.publish_file(filepath, report_name)
@@ -187,7 +187,12 @@ class Workspace:
                 report.repoint(dataset) # Once published, repoint from dummy to new dataset
                 if on_report_success: on_report_success(report, **kwargs) # Perform any final post-deploy actions
 
-        # 7. Delete old model (old report automatically go too)
+            # 7. Delete old reports
+            for old_report in matching_reports:
+                print(f'** Deleting old report [{old_report.name}]')
+                old_report.delete()
+
+        # 8. Delete old models
         for old_dataset in matching_datasets:
             print(f'** Deleting old dataset [{old_dataset.name}]')
             old_dataset.delete()
