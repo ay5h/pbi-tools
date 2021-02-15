@@ -143,7 +143,9 @@ class Workspace:
         dataset_name = name_builder(dataset_filepath, **kwargs) if name_builder else os.path.basename(dataset_filepath) # Allow custom name formation, default to filename
         matching_datasets = [d for d in self.datasets if d.name == dataset_name] # Look for existing dataset
         dataset_modified = check_file_modified(dataset_filepath)
-
+        print(len(matching_datasets))
+        print(dataset_modified)
+        print(force_refresh)
         if matching_datasets and not dataset_modified and not force_refresh: # Only publish dataset if it's been updated (or override used):
             dataset = matching_datasets.pop() # Get the latest dataset
             print(f'** Using existing dataset [{dataset.name}]')
