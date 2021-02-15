@@ -30,7 +30,7 @@ class Dataset:
                 elif 'username' in cred:
                     datasource.update_credentials(cred['username'], cred['password'])
             else:
-                print(f'*** No credentials provided for {server}')
+                print(f'*** No credentials provided for {server}. Using existing credentials.')
  
     def trigger_refresh(self):
         r = requests.post(f'https://api.powerbi.com/v1.0/myorg/groups/{self.workspace.id}/datasets/{self.id}/refreshes', headers=self.workspace.get_headers())
