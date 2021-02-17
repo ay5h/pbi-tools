@@ -165,13 +165,14 @@ class Workspace:
 
             print('*** Triggering refresh') # We check back later for completion
             dataset.trigger_refresh()
-        
-        # 4. Wait for refresh to complete (stop on error)
-        refresh_state = dataset.get_refresh_state(wait=True) # Wait for any dataset refreshes to finish before continuing
-        if refresh_state != 'Completed':
-            raise SystemExit(f'Refresh failed: {refresh_state}')
-        
-        if not matching_datasets: print('*** Dataset refreshed') # Don't report completed refresh if we used an existing dataset
+            
+            # 4. Wait for refresh to complete (stop on error)
+            time.sleep(5) # Wait a moment before continuing as the refresh takes doesn't register immediately (if not, we might not see the refresh status when we check)
+            refresh_state = dataset.get_refresh_state(wait=True) # Wait for any dataset refreshes to finish before continuing
+            if refresh_state == 'Completed':
+                print('*** Dataset refreshed') # Don't report completed refresh if we used an existing dataset
+            else:
+                raise SystemExit(f'Refresh failed: {refresh_state}')
 
         # 5. Publish reports (using dummy connection string initially)
         for filepath in report_filepaths: # Import report files
