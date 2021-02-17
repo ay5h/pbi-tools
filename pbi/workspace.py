@@ -147,6 +147,7 @@ class Workspace:
             dataset = matching_datasets.pop() # Get the latest dataset
             print(f'** Using existing dataset [{dataset.name}]')
         else:
+            print(f'** Found {len(matching_datasets)} matching datasets on service. Model modified in repo? {dataset_modified}. Refresh forced? {force_refresh}')
             print(f'** Publishing dataset [{dataset_filepath}] as [{dataset_name}]...')
             new_datasets, new_reports = self.publish_file(dataset_filepath, dataset_name, skipReports=True)
             dataset = new_datasets.pop()
