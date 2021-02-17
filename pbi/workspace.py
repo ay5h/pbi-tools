@@ -128,9 +128,9 @@ class Workspace:
 
         return not error
 
-    def deploy(self, dataset_filepath, report_filepaths, dataset_params=None, credentials=None, force_refresh=False, on_report_success=None, name_builder=None, **kwargs):
-        # 1. Get dummy connections string from 'aid report'
-        aid_report = self.find_report(AID_REPORT_NAME) # Find aid report to get new dataset connection string
+    def deploy(self, dataset_filepath, report_filepaths, dataset_params=None, credentials=None, force_refresh=False, on_report_success=None, name_builder=None, config_workspace=None, **kwargs):
+        # 1. Get dummy connections string from 'aid report' (use config workspace if given, else content workspace)
+        aid_report = (config_workspace or self).find_report(AID_REPORT_NAME) # Find aid report to get new dataset connection string
         if aid_report is None:
             raise SystemExit('ERROR: Cannot find Deployment Aid Report')
 
