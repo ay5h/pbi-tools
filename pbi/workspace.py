@@ -191,7 +191,7 @@ class Workspace:
 
             # 7. Delete old reports
             for old_report in matching_reports:
-                print(f'** Deleting old report [{old_report.name}]')
+                print(f'*** Deleting old report [{old_report.name}]')
                 old_report.delete()
 
         # 8. Delete old models
