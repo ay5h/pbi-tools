@@ -137,7 +137,7 @@ class Workspace:
         with open(AID_REPORT_NAME, 'wb') as report_file: # Get connection string from aid report
             report_file.write(aid_report.download())
         connection_string = get_connection_string(AID_REPORT_NAME)
-
+        print(connection_string)
         # 2. Publish dataset or get existing dataset (if unchanged and current)
         dataset_name = name_builder(dataset_filepath, **kwargs) if name_builder else os.path.basename(dataset_filepath) # Allow custom name formation, default to filename
         matching_datasets = [d for d in self.datasets if d.name == os.path.splitext(dataset_name)[0]] # Look for existing dataset
@@ -191,7 +191,7 @@ class Workspace:
 
             # 7. Delete old reports
             for old_report in matching_reports:
-                print(f'** Deleting old report [{old_report.name}]')
+                print(f'*** Deleting old report [{old_report.name}]')
                 old_report.delete()
 
         # 8. Delete old models
