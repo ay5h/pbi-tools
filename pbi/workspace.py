@@ -2,6 +2,7 @@ import time
 import requests
 import os
 
+from .token import Token
 from .report import Report
 from .dataset import Dataset
 from .tools import handle_request, get_connection_string, check_file_modified, rebind_report
@@ -14,14 +15,18 @@ class Workspace:
         \https://app.powerbi.com/groups/**7b0ce7b6-5055-45b2-a15b-ffeb34a85368**/list/dashboards
     
     :param id: the Power BI workspace GUID
-    :param token: a valid token with permission to access the workspace
+    :param tenant_id: the Azure tenant GUID in which the Power BI workspace lives
+    :param principal: service principal GUID
+    :param secret: associated secret value to authenticate the service principal
     :return: :class:`~Workspace` object
     """
 
-    def __init__(self, id, token):
+    def __init__(self, id, tenant_id, sp, secret):
         self.id = id
-        #: Doc comment for class a ttribute Foo.bar.
-        self.token = token
+        
+        pbi_oauth_url = f'https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token'
+        scope = 'https://analysis.windows.net/powerbi/api/.default'
+        self.token = Token(pbi_oauth_url, scope, sp, secret)
 
         r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups?$filter=contains(id,\'{self.id}\')', headers=self.get_headers())
         handle_request(r)
