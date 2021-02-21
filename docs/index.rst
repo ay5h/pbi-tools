@@ -1,58 +1,89 @@
 PBI Tools
 =========
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+**PBI Tools** is an object-orientated Python library that makes working with Power BI files easier.
 
-**PBI Tools** is an object-orientated Python library that makes working with Power BI files easier. It was designed to enable automated deployment in a DevOps environment.
+It was designed to support Power BI development and deployment (CICD).
+Specifically, it looks to solve two common problems:
+
+1. Storing PBIX files in repos without also storing the data
+2. Publishing reports that point to a separate Power BI model that no longer exists (e.g. the model used during development has since been superceded).
 
 Installation
-============
+------------
 
-To install, simply: ::
+.. code-block::
 
-   $ python -m pip install pbi-tools
+   $ pip install pbi-tools
 
 Getting Started
-===============
+---------------
 
-The simplest use case:
+First, create a workspace object:
 
 .. code-block:: python
 
-   pbi_token = Token(f'https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token', 'https://analysis.windows.net/powerbi/api/.default', 'SP', 'SECRET')
-   workspace = Workspace(workspace_id, pbi_token)
-   print(f'* This is the [{workspace.name}] workspace')
+   from pbi import Workspace
+
+   workspace = Workspace(workspace_id, tenant_id, service_principal, secret)
+   print(f'Connected to the {workspace.name} workspace!')
+
+We can do some useful things just using the workspace, for example refresh all datasets:
+
+.. code-block:: python
+
+   workspace.refresh(wait=True)
+
+Rename all reports in just a few lines:
+
+.. code-block:: python
+
+   reports = workspace.get_reports()
+   for report in reports:
+      new_name = f'{report.name} - Archived'
+      report.rename(new_name)
+
+Or get the parameters for a given model:
+
+.. code-block:: python
+
+   import pprint as pp
+
+   dataset = workspace.find_dataset('My Dataset')
+   params = dataset.get_parameters()
+   pp.pprint(params)
+
+Deployment Guide
+----------------
+
+This section walks through a typical deployment setup.
+
+.. toctree::
+   deployment.rst
+   prerequisites.rst
 
 API Reference
-=============
+-------------
 
-Full documentation of all functions.
+Full documentation for all public classes and methods.
 
-.. module:: pbi
+.. toctree::
+   api/workspace.rst
+   api/report.rst
+   api/dataset.rst
+   api/datasource.rst
+   api/token.rst
 
-Workspace
----------
-.. autoclass:: Workspace
-   :members:
+There are a few standalone functions that are used by the class methods, but may also be useful on their own.
 
-Report
-------
-.. autoclass:: Report
-   :members:
+.. toctree::
+   api/tools.rst
 
-Dataset
+Authors
 -------
-.. autoclass:: Dataset
-   :members:
 
-Datasource
-----------
-.. autoclass:: Datasource
-   :members:
+PBI Tools was written by **Sam Thomas** while working at Redkite Data Intelligence Ltd.
+Other contributors are:
 
-Token
------
-.. autoclass:: Token
-   :members:
+* Andy Shao
+* Peter Sach
