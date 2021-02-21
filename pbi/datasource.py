@@ -3,6 +3,15 @@ import requests
 from .tools import handle_request
         
 class Datasource:
+    """An object representing a Power BI datasource. You can find the GUID by going to the lineage view and clicking 'show impact' button on the data source, then inspecting the URL:
+
+        \https://app.powerbi.com/groups/7b0ce7b6-5055-45b2-a15b-ffeb34a85368/lineage?datasourceId=**ecc6affe-5bbd-4504-a3e7-14d4aae902d8**&src=datasourceCredentials&actions=impact
+
+    :param dataset: :class:`~Dataset` object representing a PBI dataset that the report is attatched to
+    :param datasource: a dictionary of attributes expected to include ``id``, ``gateway_id`` and ``connection_details``
+    :return: :class:`~Datasource` object
+    """
+
     def __init__(self, dataset, datasource):
         self.dataset = dataset
         self.id = datasource['id']
@@ -10,6 +19,17 @@ class Datasource:
         self.connection_details = datasource["connectionDetails"]
 
     def update_credentials(self, username=None, password=None, token=None):
+        """Use the provided credentials to reauthenticate datasources connected to this dataset. If any of the provided credentials do not match the data source they will be skipped.
+
+        Currently, only database credentials are supported using either SQL logins or oauth tokens.
+        
+        Warning: If you use the oauth method, then authentiaction will only remain valid until the token expires - you may need to reauthenticate before refreshing; the token may expire before the refresh has completed in large models.
+
+        :param username: username value if using SQL authentication; the ``password`` must also be provided
+        :param password: password value if using SQL authentication; the ``username`` must also be provided
+        :param token: valid oauth token (an alternative to passing username and password)
+        """
+
         if token:
             auth = 'OAuth2'
             credentials = {"credentialData": [{
