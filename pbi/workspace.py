@@ -5,7 +5,7 @@ import os
 from .token import Token
 from .report import Report
 from .dataset import Dataset
-from .tools import handle_request, get_connection_string, check_file_modified, rebind_report
+from .tools import handle_request, get_connection_string, rebind_report
 
 AID_REPORT_NAME = 'Deployment Aid Report'
         
@@ -266,13 +266,11 @@ class Workspace:
         # 2. Publish dataset or get existing dataset (if unchanged and current)
         dataset_name = name_builder(dataset_filepath, **kwargs) if name_builder else os.path.basename(dataset_filepath) # Allow custom name formation, default to filename
         matching_datasets = [d for d in self.datasets if d.name == os.path.splitext(dataset_name)[0]] # Look for existing dataset
-        dataset_modified = check_file_modified(dataset_filepath)
 
-        if matching_datasets and not dataset_modified and not force_refresh: # Only publish dataset if it's been updated (or override used):
+        if matching_datasets and not force_refresh: # Only publish dataset if it's been updated (or override used):
             dataset = matching_datasets.pop() # Get the latest dataset
             print(f'** Using existing dataset [{dataset.name}]')
         else:
-            print(f'** Found {len(matching_datasets)} matching datasets on service. Model modified in repo? {dataset_modified}. Refresh forced? {force_refresh}')
             print(f'** Publishing dataset [{dataset_filepath}] as [{dataset_name}]...')
             new_datasets, new_reports = self.publish_file(dataset_filepath, dataset_name, skipReports=True)
             dataset = new_datasets.pop()
