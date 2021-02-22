@@ -58,26 +58,23 @@ Deployment Guide
 
 This section walks through a typical deployment setup.
 
-.. toctree::
-   deployment.rst
-   prerequisites.rst
+* `Deployment <deployment.html>`_
+* `Prerequisites <prerequisites.html>`_
 
 API Reference
 -------------
 
 Full documentation for all public classes and methods.
 
-.. toctree::
-   api/workspace.rst
-   api/report.rst
-   api/dataset.rst
-   api/datasource.rst
-   api/token.rst
+* `Workspace <api/workspace.html>`_
+* `Report <api/report.html>`_
+* `Dataset <api/dataset.html>`_
+* `Datasource <api/datasource.html>`_
+* `Token <api/token.html>`_
 
 There are a few standalone functions that are used by the class methods, but may also be useful on their own.
 
-.. toctree::
-   api/tools.rst
+* `Tools <api/tools.html>`_
 
 Authors
 -------
