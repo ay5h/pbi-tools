@@ -1,10 +1,11 @@
 import requests
 from .tools import handle_request
-        
-class Report:
-    """An object representing a Power BI report. You can find the GUID by going to the report and inspecting the URL:
 
-            \https://app.powerbi.com/groups/7b0ce7b6-5055-45b2-a15b-ffeb34a85368/reports/**4702db31-bc75-422c-92b4-b6a0809b0f1a**/ReportSection
+class Report:
+    """An object representing a Power BI report.
+    You can find the GUID by going to the report and inspecting the URL:
+
+            `https://app.powerbi.com/groups/7b0ce7b6-5055-45b2-a15b-ffeb34a85368/reports/**4702db31-bc75-422c-92b4-b6a0809b0f1a**/ReportSection`
 
     :param workspace: :class:`~Workspace` object representing the PBI workspace that the report lives in
     :param report: a dictionary of attributes expected to include ``id`` and ``name``
@@ -45,10 +46,11 @@ class Report:
         return Report(self.workspace, json) # Return new report object
 
     def rename(self, new_name):
-        """Rename this report. Due to limitations in the PBI REST API, this actually creates a copy of the report and deletes the old one, returning a reference to the new report.
-        
+        """Rename this report.
+        Due to limitations in the PBI REST API, this actually creates a copy of the report and deletes the old one, returning a reference to the new report.
+
         **Warning**: The report GUID will change as a result of calling this method.
-        
+
         :param new_name: The new report name
         :return: newly created :class:`~Report` object
         """
