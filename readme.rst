@@ -3,10 +3,10 @@ PBI Tools
 
 PBI Tools is an object-orientated Python library that makes working with Power BI files easier.
 
-Warning
--------
+Alpha Warning
+-------------
 
-**WARNING:** This library is currently in **alpha**.
+This library is currently in **alpha**.
 Use with caution and feel free to raise any issues on the `GitHub page <https://github.com/thomas-daughters/pbi-tools/issues>`_.
 
 Documentation
