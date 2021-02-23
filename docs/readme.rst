@@ -1,5 +1,12 @@
+:orphan:
+
 PBI Tools
 =========
+
+.. note::
+   Full documentation can be found on `Read the Docs <https://pbi-tools.readthedocs.io/en/latest>`_.
+
+.. include_after_this_label
 
 **PBI Tools** is an object-orientated Python library that makes working with Power BI files easier.
 
@@ -8,6 +15,10 @@ Specifically, it looks to solve two common problems:
 
 1. Storing PBIX files in repos without also storing the data
 2. Publishing reports that point to a separate Power BI model that no longer exists (e.g. the model used during development has since been superceded).
+
+.. warning::
+   This library is currently in alpha - feel free to use it experimentally.
+   If you do come across any issues, feel free to raise them on the `GitHub page <https://github.com/thomas-daughters/pbi-tools/issues>`_.
 
 Installation
 ------------
@@ -53,34 +64,6 @@ Or get the parameters for a given model:
    params = dataset.get_parameters()
    pp.pprint(params)
 
-Deployment Guide
-----------------
+.. include_until_this_label
 
-This section walks through a typical deployment setup.
-
-* `Deployment <deployment.html>`_
-* `Prerequisites <prerequisites.html>`_
-
-API Reference
--------------
-
-Full documentation for all public classes and methods.
-
-* `Workspace <api/workspace.html>`_
-* `Report <api/report.html>`_
-* `Dataset <api/dataset.html>`_
-* `Datasource <api/datasource.html>`_
-* `Token <api/token.html>`_
-
-There are a few standalone functions that are used by the class methods, but may also be useful on their own.
-
-* `Tools <api/tools.html>`_
-
-Authors
--------
-
-PBI Tools was written by **Sam Thomas** while working at Redkite Data Intelligence Ltd.
-Other contributors are:
-
-* Andy Shao
-* Peter Sach
+.. include:: authors.rst
