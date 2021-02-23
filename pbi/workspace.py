@@ -8,6 +8,12 @@ from .dataset import Dataset
 from .tools import handle_request, get_connection_string, rebind_report
 
 AID_REPORT_NAME = 'Deployment Aid Report'
+
+def _name_builder(filepath, **kwargs):
+    return os.path.basename(filepath)
+
+def _name_comparator(a, b):
+    return a == b
         
 class Workspace:
     """An object representing a Power BI workspace. You can find the GUID by going to the workspace and inspecting the URL:
@@ -206,7 +212,7 @@ class Workspace:
 
             return not error
 
-    def deploy(self, dataset_filepath, report_filepaths, dataset_params=None, credentials=None, force_refresh=False, on_report_success=None, name_builder=None, config_workspace=None, **kwargs):
+    def deploy(self, dataset_filepath, report_filepaths, dataset_params=None, credentials=None, force_refresh=False, on_report_success=None, name_builder=_name_builder, name_comparator=_name_comparator, config_workspace=None, **kwargs):
         """Publishes a single model and an collection of associated reports. Note, currently only database authentication is supported, using either SQL logins or oauth tokens.
 
         There is a requirement for a dummy report called 'Deployment Aid Report' to exist either in the publishing workspace (default) or in a separate 'config' workspace.
@@ -264,8 +270,8 @@ class Workspace:
         connection_string = get_connection_string(AID_REPORT_NAME)
 
         # 2. Publish dataset or get existing dataset (if unchanged and current)
-        dataset_name = name_builder(dataset_filepath, **kwargs) if name_builder else os.path.basename(dataset_filepath) # Allow custom name formation, default to filename
-        matching_datasets = [d for d in self.datasets if d.name == os.path.splitext(dataset_name)[0]] # Look for existing dataset
+        dataset_name = name_builder(dataset_filepath, **kwargs) # Allow custom name formation, default to filename
+        matching_datasets = [d for d in self.datasets if name_comparator(d.name, dataset_name)] # Look for existing dataset
 
         if matching_datasets and not force_refresh: # Only publish dataset if it's been updated (or override used):
             dataset = matching_datasets.pop() # Get the latest dataset
