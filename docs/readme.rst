@@ -1,5 +1,3 @@
-:orphan:
-
 PBI Tools
 =========
 
@@ -64,6 +62,11 @@ Or get the parameters for a given model:
    params = dataset.get_parameters()
    pp.pprint(params)
 
-.. include_until_this_label
+Authors
+-------
 
-.. include:: authors.rst
+PBI Tools was written by **Sam Thomas** while working at Redkite Data Intelligence Ltd.
+Other contributors are:
+
+* Andy Shao
+* Peter Sach

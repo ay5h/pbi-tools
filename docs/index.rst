@@ -3,7 +3,6 @@ PBI Tools
 
 .. include:: readme.rst
    :start-after: .. include_after_this_label
-   :end-before: .. include_until_this_label
 
 Deployment Guide
 ----------------
@@ -30,6 +29,3 @@ There are a few standalone functions that are used by the class methods, but may
 
 .. toctree::
    api/tools
-
-.. include:: authors.rst
-   :start-after: .. include_after_this_label
