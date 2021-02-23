@@ -2,16 +2,31 @@ import time
 import requests
 import os
 
+from .token import Token
 from .report import Report
 from .dataset import Dataset
-from .tools import handle_request, get_connection_string, check_file_modified, rebind_report
+from .tools import handle_request, get_connection_string, rebind_report
 
 AID_REPORT_NAME = 'Deployment Aid Report'
         
 class Workspace:
-    def __init__(self, id, token, stage=None):
+    """An object representing a Power BI workspace. You can find the GUID by going to the workspace and inspecting the URL:
+
+        \https://app.powerbi.com/groups/**7b0ce7b6-5055-45b2-a15b-ffeb34a85368**/list/dashboards
+    
+    :param id: the Power BI workspace GUID
+    :param tenant_id: the Azure tenant GUID in which the Power BI workspace lives
+    :param principal: service principal GUID
+    :param secret: associated secret value to authenticate the service principal
+    :return: :class:`~Workspace` object
+    """
+
+    def __init__(self, id, tenant_id, sp, secret):
         self.id = id
-        self.token = token
+        
+        pbi_oauth_url = f'https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token'
+        scope = 'https://analysis.windows.net/powerbi/api/.default'
+        self.token = Token(pbi_oauth_url, scope, sp, secret)
 
         r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups?$filter=contains(id,\'{self.id}\')', headers=self.get_headers())
         handle_request(r)
@@ -24,6 +39,11 @@ class Workspace:
         return {'Authorization': f'Bearer {self.token.get_token()}'}
 
     def get_datasets(self):
+        """Fetches a fresh list of datasets from the PBI service.
+
+        :return: array of :class:`~Dataset` objects
+        """
+
         r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/datasets', headers=self.get_headers())
         json = handle_request(r)
 
@@ -31,12 +51,25 @@ class Workspace:
         return self.datasets
 
     def get_dataset(self, dataset_id):
+        """Fetches the dataset with the given GUID. You can find the GUID by going to the setting page of the desired dataset and inspecting the URL:
+
+            \https://app.powerbi.com/groups/7b0ce7b6-5055-45b2-a15b-ffeb34a85368/settings/datasets/**6b7b638b-8a67-4e7c-b9b9-f17601ae8e4a**
+
+        :param dataset_id: the dataset GUID
+        :return: a :class:`~Dataset` object
+        """
+
         r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/datasets/{dataset_id}', headers=self.get_headers())
         json = handle_request(r)
 
         return Dataset(self, json)
 
     def get_reports(self):
+        """Fetches a fresh list of reports from the PBI service.
+
+        :return: array of :class:`~Report` objects
+        """
+
         r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/reports', headers=self.get_headers())
         handle_request(r)
 
@@ -45,12 +78,28 @@ class Workspace:
         return self.reports
 
     def get_report(self, report_id):
+        """Fetches the report with the given GUID. You can find the GUID by going to the report and inspecting the URL:
+
+            \https://app.powerbi.com/groups/7b0ce7b6-5055-45b2-a15b-ffeb34a85368/reports/**4702db31-bc75-422c-92b4-b6a0809b0f1a**/ReportSection
+
+        :param report_id: the report GUID
+        :return: a :class:`~Report` object
+        """
+
         r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/reports/{report_id}', headers=self.get_headers())
         json = handle_request(r)
 
         return Report(self, json)
 
     def find_report(self, report_name):
+        """Tries to fetch the report with the given name. If more than one report is found, only the first is returned. The order is defined by Power BI.
+
+            \https://app.powerbi.com/groups/7b0ce7b6-5055-45b2-a15b-ffeb34a85368/reports/**4702db31-bc75-422c-92b4-b6a0809b0f1a**/ReportSection
+
+        :param report_name: the report GUID
+        :return: a :class:`~Report` object (or ``None``)
+        """
+
         r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/reports', headers=self.get_headers())
         json = handle_request(r)
 
@@ -59,6 +108,14 @@ class Workspace:
                 return Report(self, r)
 
     def publish_file(self, filepath, name, skipReports=False):
+        """Publishes the given PBIX file to the workspace. If a model/report already exists with the same name, the new model/report is published alongside it.
+
+        :param filepath: absolute *or* relative path to the PBIX file which is to be published
+        :param name: desired name for the model/report
+        :param skipReports: whether to supress the publishing of reports (i.e. publish only the model)
+        :return: a tuple of arrays - first of :class:`~Dataset` objects, second of :class:`~Report` objects
+        """
+
         params = {'datasetDisplayName': name}
         if skipReports: params['skipReport'] = 'true'
 
@@ -90,7 +147,27 @@ class Workspace:
                 print(f'Import ERROR: {json.get("error").get("code")} ({json.get("error").get("message")})')
                 break
 
-    def refresh_datasets(self, credentials=None):
+    def refresh_datasets(self, credentials=None, wait=True):
+        """Refreshes all datasets in the workspace, optionally reauthenticating using the credentials provided. Currently, only database credentials are supported using either SQL logins or oauth tokens.
+
+        :param credentials: a dictionary of credentials (see examples below)
+        :param wait: whether to wait for all models to finish refreshing before returning
+        :return: a `Boolean` indicating whether all models refreshed successfully (if waiting)
+
+        .. code-block:: python
+
+            >>> creds = {}
+            >>> creds['serverA.database.windows.net'] = {'username': 'db_username', 'password': 'db_password'}
+            >>> creds['serverB.database.windows.net'] = {'token': 'oauth_token'}
+            
+            >>> pbi_token = Token(f'https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token', 'https://analysis.windows.net/powerbi/api/.default', pbi_sp, pbi_sp_secret)
+            >>> workspace = Workspace(workspace_id, pbi_token)
+            >>> result = workspace.refresh_datasets(creds)
+            
+            >>> result
+            True
+        """
+
         error = False
         datasets = [d for d in self.datasets if 'Deployment Aid' not in d.name]
         
@@ -113,22 +190,70 @@ class Workspace:
                 print(f'!! ERROR. Triggering refresh failed for [{dataset.name}]. {e}')
                 error = True
 
-        print('* Waiting for models to finish refreshing...')
-        for dataset in datasets:
-            try:
-                refresh_status = dataset.get_refresh_state(wait=True) # Wait for each refresh to complete
-                if refresh_status == 'Completed':
-                    print(f'** Refresh complete for [{dataset.name}]')
-                else:
-                    raise SystemExit(refresh_status)
+        if wait:
+            print('* Waiting for models to finish refreshing...')
+            for dataset in datasets:
+                try:
+                    refresh_status = dataset.get_refresh_state(wait=True) # Wait for each refresh to complete
+                    if refresh_status == 'Completed':
+                        print(f'** Refresh complete for [{dataset.name}]')
+                    else:
+                        raise SystemExit(refresh_status)
 
-            except SystemExit as e:
-                print(f'!! ERROR. Refresh failed for [{dataset.name}]. {e}')
-                error = True
+                except SystemExit as e:
+                    print(f'!! ERROR. Refresh failed for [{dataset.name}]. {e}')
+                    error = True
 
-        return not error
+            return not error
 
     def deploy(self, dataset_filepath, report_filepaths, dataset_params=None, credentials=None, force_refresh=False, on_report_success=None, name_builder=None, config_workspace=None, **kwargs):
+        """Publishes a single model and an collection of associated reports. Note, currently only database authentication is supported, using either SQL logins or oauth tokens.
+
+        There is a requirement for a dummy report called 'Deployment Aid Report' to exist either in the publishing workspace (default) or in a separate 'config' workspace.
+
+        You can optionally provide a function to define the model/report names and a function to execute any 'wrap up' steps after a successful report publish. You can pass through additional data that might be useful to these functions using the ``**kwargs``.
+
+        :param dataset_filepath: path to the model PBIX file
+        :param report_filepaths: an array of paths to report PBIX files
+        :param dataset_params: a dictionary of parameters to be applied to the model
+        :param credentials: a dictionary of credentials (see examples in :meth:`~refresh_datasets`)
+        :param force_refresh: force the model to refresh even if does not meet other criteria
+        :param on_report_success: a function that is called after each report is successfully published - passing the report object and ``**kwargs``
+        :param name_builder: a function that returns the desired model/report name - passing the report object and ``**kwargs``
+        :param config_workspace: a separate workspace in which to look for the 'Deployment Aid Report'
+        :param kwargs: options passed through to ``on_report_success()`` and ``name_builder()`` functions
+
+        .. code-block:: python
+
+            >>> report_paths = ['path/to/reportA', 'path/to/reportB']
+            >>> params = {'schema': 'db_schema'}
+
+            >>> creds = {}
+            >>> creds['serverA.database.windows.net'] = {'username': 'db_username', 'password': 'db_password'}
+
+            >>> pbi_token = Token(f'https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token', 'https://analysis.windows.net/powerbi/api/.default', pbi_sp, pbi_sp_secret)
+            >>> workspace = Workspace(workspace_id, pbi_token)
+            >>> result = workspace.deploy('path/to/model', report_paths, params, creds)
+            
+            >>> result
+            True
+
+        An example of a ``name_builder()`` function that prefixes the filename with a 'group' value passed through from the calling function:
+
+        .. code-block:: python
+
+            def name_builder(filepath, **kwargs):
+                components = [kwargs.get('group'), os.path.basename(filepath)]
+                return ' -- '.join(components)
+
+        An example of an ``on_report_success()`` function that prints to the console each time a report is successfully published:
+
+        .. code-block:: python
+
+            def on_report_success(report, **kwargs):
+                print(f'Report deployed! {report.name}')
+        """
+
         # 1. Get dummy connections string from 'aid report' (use config workspace if given, else content workspace)
         aid_report = (config_workspace or self).find_report(AID_REPORT_NAME) # Find aid report to get new dataset connection string
         if aid_report is None:
@@ -141,13 +266,11 @@ class Workspace:
         # 2. Publish dataset or get existing dataset (if unchanged and current)
         dataset_name = name_builder(dataset_filepath, **kwargs) if name_builder else os.path.basename(dataset_filepath) # Allow custom name formation, default to filename
         matching_datasets = [d for d in self.datasets if d.name == os.path.splitext(dataset_name)[0]] # Look for existing dataset
-        dataset_modified = check_file_modified(dataset_filepath)
 
-        if matching_datasets and not dataset_modified and not force_refresh: # Only publish dataset if it's been updated (or override used):
+        if matching_datasets and not force_refresh: # Only publish dataset if it's been updated (or override used):
             dataset = matching_datasets.pop() # Get the latest dataset
             print(f'** Using existing dataset [{dataset.name}]')
         else:
-            print(f'** Found {len(matching_datasets)} matching datasets on service. Model modified in repo? {dataset_modified}. Refresh forced? {force_refresh}')
             print(f'** Publishing dataset [{dataset_filepath}] as [{dataset_name}]...')
             new_datasets, new_reports = self.publish_file(dataset_filepath, dataset_name, skipReports=True)
             dataset = new_datasets.pop()

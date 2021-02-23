@@ -1,6 +1,5 @@
 import os
 import zipfile as zf
-from git import Repo
 
 def handle_request(r, stop=True):
     if not r.ok:
@@ -12,6 +11,14 @@ def handle_request(r, stop=True):
     return r.json() if r.content else None
 
 def rebind_report(filepath, connection_string):
+    """Repoint a PBIX file to use another model. Only works if the original file was pointed at a remote model when it was last saved (i.e. does not have an embedded model).
+
+    **Warning**: This modifies the PBIX file by copying some content from another file. This is not supported by Microsoft and future updates to Power BI may cause this function to corrupt the file. **Never** use on a file which is not backed up.
+    
+    :param filepath: path to the PBIX file to modify
+    :param connection_string: the connection string, extracted from another PBIX file
+    """
+
     root, filename = os.path.split(filepath)
     base, ext = os.path.splitext(filename)
     temp_filepath = os.path.join(root, f'{base} Temp{ext}')
@@ -28,17 +35,12 @@ def rebind_report(filepath, connection_string):
     os.rename(temp_filepath, filepath)
 
 def get_connection_string(filepath):
+    """Returns the connection string component from a PBIX file. Only works if the original file was pointed at a remote model when it was last saved (i.e. does not have an embedded model).
+    
+    :param filepath: path to the PBIX file to read from
+    """
+
     with zf.ZipFile(filepath, 'r') as zip_file:
         for f in zip_file.namelist():
             if f == 'Connections':
                 return zip_file.read(f)
-
-def check_file_modified(filepath):
-    repo = Repo(filepath, search_parent_directories=True)
-    diff = repo.head.commit.diff('HEAD~1')
-    filepath_end = filepath.replace('\\', '/').split('pbi/')[-1]
-    
-    return any(f.b_path.split('pbi/')[-1] == filepath_end and f.change_type in ['A', 'M', 'R'] for f in diff)
-
-def open_branches():
-    return [b.remote_head for b in Repo(os.path.abspath(__file__), search_parent_directories=True).remotes.origin.refs]
