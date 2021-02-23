@@ -1,6 +1,6 @@
 import time
 import requests
-import os
+from os import path
 
 from .token import Token
 from .report import Report
@@ -10,7 +10,8 @@ from .tools import handle_request, get_connection_string, rebind_report
 AID_REPORT_NAME = 'Deployment Aid Report'
 
 def _name_builder(filepath, **kwargs):
-    return os.path.basename(filepath)
+    filename = path.basename(filepath)
+    return path.splitext(filename)[0] # Get file stem (i.e. no extension)
 
 def _name_comparator(a, b):
     return a == b
@@ -122,7 +123,7 @@ class Workspace:
         :return: a tuple of arrays - first of :class:`~Dataset` objects, second of :class:`~Report` objects
         """
 
-        params = {'datasetDisplayName': name}
+        params = {'datasetDisplayName': name + '.pbix'}
         if skipReports: params['skipReport'] = 'true'
 
         payload = {}
@@ -270,7 +271,7 @@ class Workspace:
         connection_string = get_connection_string(AID_REPORT_NAME)
 
         # 2. Publish dataset or get existing dataset (if unchanged and current)
-        dataset_name = name_builder(dataset_filepath, **kwargs) # Allow custom name formation, default to filename
+        dataset_name = name_builder(dataset_filepath, **kwargs)
         matching_datasets = [d for d in self.datasets if name_comparator(d.name, dataset_name)] # Look for existing dataset
 
         if matching_datasets and not force_refresh: # Only publish dataset if it's been updated (or override used):
@@ -306,8 +307,8 @@ class Workspace:
 
         # 5. Publish reports (using dummy connection string initially)
         for filepath in report_filepaths: # Import report files
-            report_name = name_builder(filepath, **kwargs) if name_builder else os.path.basename(filepath) # Allow custom name formation, default to filename
-            matching_reports = [r for r in self.reports if r.name == os.path.splitext(report_name)[0]] # Look for existing reports
+            report_name = name_builder(filepath, **kwargs)
+            matching_reports = [r for r in self.reports if name_comparator(r.name == report_name)] # Look for existing reports
 
             print(f'** Publishing report [{filepath}] as [{report_name}]...') # Alter PBIX file with dummy dataset, in case dataset used during development has since been deleted (we repoint once on service)
             rebind_report(filepath, connection_string)
