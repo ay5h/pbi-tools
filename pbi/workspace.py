@@ -308,7 +308,7 @@ class Workspace:
         # 5. Publish reports (using dummy connection string initially)
         for filepath in report_filepaths: # Import report files
             report_name = name_builder(filepath, **kwargs)
-            matching_reports = [r for r in self.reports if name_comparator(r.name == report_name)] # Look for existing reports
+            matching_reports = [r for r in self.reports if name_comparator(r.name, report_name)] # Look for existing reports
 
             print(f'** Publishing report [{filepath}] as [{report_name}]...') # Alter PBIX file with dummy dataset, in case dataset used during development has since been deleted (we repoint once on service)
             rebind_report(filepath, connection_string)
