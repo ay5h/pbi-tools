@@ -283,22 +283,26 @@ class Workspace:
             dataset = new_datasets.pop()
 
         # 3. Update params and credentials, then refresh (unless current)
-        if dataset.get_refresh_state() not in ('Completed', 'Unknown'): # If we're using a valid exising dataset, don't touch it
-            dataset.take_ownership() # Publishing does not change ownership, so make sure we own it before continuing
+        refresh_state = dataset.get_refresh_state()
+        if refresh_state == 'Complete':
+            print('** Existing dataset valid')
+        else:
+            if refresh_state != 'Unknown': # Unknown == refreshing; therefore either last refresh failed, or there has never been a refresh attempt
+                dataset.take_ownership() # Publishing does not change ownership, so make sure we own it before continuing
 
-            print('*** Updating parameters...')
-            param_keys = [p['name'] for p in dataset.get_params()]
-            params = [{'name': k, 'newValue': v} for k, v in dataset_params.items() if k in param_keys] # Only try to update params that are defined for this dataset
-            if params: dataset.update_params({'updateDetails': params})
+                print('*** Updating parameters...')
+                param_keys = [p['name'] for p in dataset.get_params()]
+                params = [{'name': k, 'newValue': v} for k, v in dataset_params.items() if k in param_keys] # Only try to update params that are defined for this dataset
+                if params: dataset.update_params({'updateDetails': params})
 
-            print('*** Authenticating...')
-            dataset.authenticate(credentials)
+                print('*** Authenticating...')
+                dataset.authenticate(credentials)
 
-            print('*** Triggering refresh') # We check back later for completion
-            dataset.trigger_refresh()
-            
+                print('*** Triggering refresh') # We check back later for completion
+                dataset.trigger_refresh()
+                time.sleep(5) # Wait a moment before continuing as the refresh takes doesn't register immediately (if not, we might not see the refresh status when we check)
+
             # 4. Wait for refresh to complete (stop on error)
-            time.sleep(5) # Wait a moment before continuing as the refresh takes doesn't register immediately (if not, we might not see the refresh status when we check)
             refresh_state = dataset.get_refresh_state(wait=True) # Wait for any dataset refreshes to finish before continuing
             if refresh_state == 'Completed':
                 print('*** Dataset refreshed') # Don't report completed refresh if we used an existing dataset
