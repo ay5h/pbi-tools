@@ -317,7 +317,12 @@ class Workspace:
             # 6. Repoint to refreshed model and update Portals (if given)
             for report in new_reports:
                 report.repoint(dataset) # Once published, repoint from dummy to new dataset
-                if on_report_success: on_report_success(report, **kwargs) # Perform any final post-deploy actions
+                if on_report_success:
+                    try:
+                        on_report_success(report, **kwargs) # Perform any final post-deploy actions
+                    except Exception as e:
+                        print(f'! WARNING. Error executing post-deploy steps. {e}')
+                        error = True
 
             # 7. Delete old reports
             for old_report in matching_reports:
