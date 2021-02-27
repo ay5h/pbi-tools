@@ -2,6 +2,7 @@ import time
 import requests
 from os import path
 
+from .tenant import Tenant
 from .token import Token
 from .report import Report
 from .dataset import Dataset
@@ -28,22 +29,26 @@ class Workspace:
     :return: :class:`~Workspace` object
     """
 
-    def __init__(self, id, tenant_id, sp, secret):
+    def __init__(self, tenant, id):
         self.id = id
+        self.tenant = tenant
         
-        pbi_oauth_url = f'https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token'
-        scope = 'https://analysis.windows.net/powerbi/api/.default'
-        self.token = Token(pbi_oauth_url, scope, sp, secret)
-
         r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups?$filter=contains(id,\'{self.id}\')', headers=self.get_headers())
         handle_request(r)
         self.name = r.json()['value'][0]['name']
 
+        self.get_name()
         self.get_datasets()
         self.get_reports()
     
     def get_headers(self):
-        return {'Authorization': f'Bearer {self.token.get_token()}'}
+        return self.tenant.get_headers()
+
+    def get_name(self):
+        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups?$filter=contains(id,\'{self.id}\')', headers=self.get_headers())
+        handle_request(r)
+        self.name = r.json()['value'][0]['name']
+        return self.name
 
     def get_datasets(self):
         """Fetches a fresh list of datasets from the PBI service.
