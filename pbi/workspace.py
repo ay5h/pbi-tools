@@ -2,8 +2,6 @@ import time
 import requests
 from os import path
 
-from .tenant import Tenant
-from .token import Token
 from .report import Report
 from .dataset import Dataset
 from .tools import handle_request, get_connection_string, rebind_report
@@ -37,18 +35,38 @@ class Workspace:
         handle_request(r)
         self.name = r.json()['value'][0]['name']
 
-        self.get_name()
+        self._get_name()
         self.get_datasets()
         self.get_reports()
     
     def get_headers(self):
         return self.tenant.get_headers()
 
-    def get_name(self):
+    def _get_name(self):
         r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups?$filter=contains(id,\'{self.id}\')', headers=self.get_headers())
-        handle_request(r)
-        self.name = r.json()['value'][0]['name']
+        json = handle_request(r)
+
+        self.name = json.get('value')[0]['name']
         return self.name
+
+    def get_users_access(self):
+        """Fetches a fresh list of users with access to this workspace.
+        Includes both human and service principals.
+
+        :return: array of dictonaries, each representing a user
+        """
+
+        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/users', headers=self.get_headers())
+        json = handle_request(r)
+
+        self.users = json.get('value')
+        return self.users
+
+    def grant_user_access(self, user_access):
+        """Grant access to this workspace to the given user"""
+
+        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/users', headers=self.get_headers(), json=user_access)
+        json = handle_request(r)
 
     def get_datasets(self):
         """Fetches a fresh list of datasets from the PBI service.
@@ -104,9 +122,9 @@ class Workspace:
         return Report(self, json)
 
     def find_report(self, report_name):
-        """Tries to fetch the report with the given name. If more than one report is found, only the first is returned. The order is defined by Power BI.
-
-            \https://app.powerbi.com/groups/7b0ce7b6-5055-45b2-a15b-ffeb34a85368/reports/**4702db31-bc75-422c-92b4-b6a0809b0f1a**/ReportSection
+        """Tries to fetch the report with the given name.
+        If more than one report is found, only the first is returned.
+        The order is defined by Power BI.
 
         :param report_name: the report GUID
         :return: a :class:`~Report` object (or ``None``)
@@ -120,7 +138,8 @@ class Workspace:
                 return Report(self, r)
 
     def publish_file(self, filepath, name, skipReports=False):
-        """Publishes the given PBIX file to the workspace. If a model/report already exists with the same name, the new model/report is published alongside it.
+        """Publishes the given PBIX file to the workspace.
+        If a model/report already exists with the same name, the new model/report is published alongside it.
 
         :param filepath: absolute *or* relative path to the PBIX file which is to be published
         :param name: desired name for the model/report
