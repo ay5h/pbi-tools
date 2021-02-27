@@ -40,7 +40,7 @@ class Workspace:
         self.get_reports()
     
     def get_headers(self):
-        return self.tenant.get_headers()
+        return self.tenant._get_headers()
 
     def _get_name(self):
         r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups?$filter=contains(id,\'{self.id}\')', headers=self.get_headers())
