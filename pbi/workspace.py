@@ -61,8 +61,8 @@ class Workspace:
     def grant_user_access(self, user_access):
         """Grant access to this workspace to the given user"""
 
-        r = requests.post(f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/users', headers=self.get_headers(), json=user_access)
-        json = handle_request(r)
+        r = requests.put(f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/users', headers=self.get_headers(), json=user_access)
+        handle_request(r)
 
     def copy_permissions(self, reference_workspace):
         """Copying the access setup from another workspace.
