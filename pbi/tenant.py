@@ -30,7 +30,7 @@ class Tenant:
         r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups', headers=self._get_headers())
         json = handle_request(r)
 
-        self.workspaces = [Workspace(self, w) for w in json.get('value')]
+        self.workspaces = [Workspace(self, w.get('id')) for w in json.get('value')]
         return self.workspaces
 
     def find_workspace(self, workspace_name):

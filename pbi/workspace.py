@@ -31,10 +31,6 @@ class Workspace:
         self.id = id
         self.tenant = tenant
         
-        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups?$filter=contains(id,\'{self.id}\')', headers=self.get_headers())
-        handle_request(r)
-        self.name = r.json()['value'][0]['name']
-
         self._get_name()
         self.get_datasets()
         self.get_reports()
