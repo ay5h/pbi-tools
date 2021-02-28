@@ -6,6 +6,7 @@ from .report import Report
 from .dataset import Dataset
 from .tools import handle_request, get_connection_string, rebind_report
 
+AID_WORKSPACE_NAME = 'Deployment Aid'
 AID_REPORT_NAME = 'Deployment Aid Report'
 
 def _name_builder(filepath, **kwargs):
@@ -246,7 +247,7 @@ class Workspace:
 
             return not error
 
-    def deploy(self, dataset_filepath, report_filepaths, dataset_params=None, credentials=None, force_refresh=False, on_report_success=None, name_builder=_name_builder, name_comparator=_name_comparator, config_workspace=None, **kwargs):
+    def deploy(self, dataset_filepath, report_filepaths, dataset_params=None, credentials=None, force_refresh=False, on_report_success=None, name_builder=_name_builder, name_comparator=_name_comparator, **kwargs):
         """Publishes a single model and an collection of associated reports. Note, currently only database authentication is supported, using either SQL logins or oauth tokens.
 
         There is a requirement for a dummy report called 'Deployment Aid Report' to exist either in the publishing workspace (default) or in a separate 'config' workspace.
@@ -294,8 +295,12 @@ class Workspace:
                 print(f'Report deployed! {report.name}')
         """
 
-        # 1. Get dummy connections string from 'aid report' (use config workspace if given, else content workspace)
-        aid_report = (config_workspace or self).find_report(AID_REPORT_NAME) # Find aid report to get new dataset connection string
+        # 1. Get dummy connections string from 'aid report' in config workspace
+        config_workspace = self.tenant.find_workspace(AID_WORKSPACE_NAME)
+        if config_workspace is None:
+            raise SystemExit('ERROR: Cannot find PBI Tools Config workspace')
+
+        aid_report = config_workspace.find_report(AID_REPORT_NAME) # Find aid report to get new dataset connection string
         if aid_report is None:
             raise SystemExit('ERROR: Cannot find Deployment Aid Report')
 
