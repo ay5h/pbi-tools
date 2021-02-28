@@ -54,7 +54,7 @@ class Tenant:
         """
 
         payload = {"name": name}
-        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups', headers=self._get_headers(), json=payload)
+        r = requests.post(f'https://api.powerbi.com/v1.0/myorg/groups', headers=self._get_headers(), json=payload)
         json = handle_request(r)
         workspace = Workspace(self, json.get('id'))
 
