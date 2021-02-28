@@ -64,6 +64,15 @@ class Workspace:
         r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/users', headers=self.get_headers(), json=user_access)
         json = handle_request(r)
 
+    def copy_workspace_permissions(self, reference_workspace):
+        """Copying the access setup from another workspace.
+
+        :param reference_workspace: the workspace GUID of another workspace to copy access setup from
+        """
+
+        for user in reference_workspace.get_users_access():
+            self.grant_user_access(user)
+
     def get_datasets(self):
         """Fetches a fresh list of datasets from the PBI service.
 

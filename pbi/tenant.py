@@ -45,8 +45,8 @@ class Tenant:
             if workspace.name == workspace_name:
                 return Workspace(self, workspace.id)
 
-    def create_workspace(self, name, reference_workspace=None):
-        """Creates a new workspace, optionally copying the access setup from another workspace.
+    def create_workspace(self, name):
+        """Creates a new workspace.
 
         :param name: the name of the new workspace
         :param reference_workspace: the workspace GUID of another workspace to copy access setup from
@@ -58,9 +58,5 @@ class Tenant:
         json = handle_request(r)
         workspace = Workspace(self, json.get('id'))
 
-        # If a reference workspace is given, replicate users' access settings
-        if reference_workspace:
-            for user in workspace.get_users_access():
-                workspace.grant_user_access(user)
-
+        print(f'Created new workspace [{workspace.name}]')
         return workspace
