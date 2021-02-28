@@ -43,11 +43,12 @@ class Tenant:
         workspaces = self.get_workspaces()
         for workspace in workspaces:
             if workspace.name == workspace_name:
-                return Workspace([self, workspace.id])
+                return Workspace(self, workspace.id)
 
     def create_workspace(self, name, reference_workspace=None):
         """Creates a new workspace, optionally copying the access setup from another workspace.
 
+        :param name: the name of the new workspace
         :param reference_workspace: the workspace GUID of another workspace to copy access setup from
         :return: a :class:`~Workspace` object
         """
@@ -55,7 +56,7 @@ class Tenant:
         payload = {"name": name}
         r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups', headers=self._get_headers(), json=payload)
         json = handle_request(r)
-        workspace = Workspace([self, json.get('id')])
+        workspace = Workspace(self, json.get('id'))
 
         # If a reference workspace is given, replicate users' access settings
         if reference_workspace:
