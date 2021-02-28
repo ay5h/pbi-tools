@@ -59,9 +59,13 @@ class Workspace:
         return self.users
 
     def grant_user_access(self, user_access):
-        """Grant access to this workspace to the given user"""
+        """Grant access to this workspace to the given user.
+        Will intelligently handle both create and update scenarios.
+        """
 
-        r = requests.put(f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/users', headers=self.get_headers(), json=user_access)
+        identifiers = [u.get('identifier') for u in self.get_users_access()] # list of emails/principal GUIDs
+        method = 'put' if user_access.get('identifier') in identifiers else 'post' # put/post based on whether user already exists
+        r = requests.request(method, f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/users', headers=self.get_headers(), json=user_access)
         handle_request(r)
 
     def copy_permissions(self, reference_workspace):
