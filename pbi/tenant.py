@@ -42,8 +42,8 @@ class Tenant:
 
         workspaces = self.get_workspaces()
         for workspace in workspaces:
-            if workspace.get('name') == workspace_name:
-                return Workspace([self, workspace.get('id')])
+            if workspace.name == workspace_name:
+                return Workspace([self, workspace.id])
 
     def create_workspace(self, name, reference_workspace=None):
         """Creates a new workspace, optionally copying the access setup from another workspace.
