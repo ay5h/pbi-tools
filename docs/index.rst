@@ -72,6 +72,7 @@ API Reference
 Full documentation for all public classes and methods.
 
 .. toctree::
+   api/tenant
    api/workspace
    api/report
    api/dataset

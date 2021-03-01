@@ -2,11 +2,11 @@ import time
 import requests
 from os import path
 
-from .token import Token
 from .report import Report
 from .dataset import Dataset
 from .tools import handle_request, get_connection_string, rebind_report
 
+AID_WORKSPACE_NAME = 'Deployment Aid'
 AID_REPORT_NAME = 'Deployment Aid Report'
 
 def _name_builder(filepath, **kwargs):
@@ -28,22 +28,55 @@ class Workspace:
     :return: :class:`~Workspace` object
     """
 
-    def __init__(self, id, tenant_id, sp, secret):
+    def __init__(self, tenant, id):
         self.id = id
+        self.tenant = tenant
         
-        pbi_oauth_url = f'https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token'
-        scope = 'https://analysis.windows.net/powerbi/api/.default'
-        self.token = Token(pbi_oauth_url, scope, sp, secret)
-
-        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups?$filter=contains(id,\'{self.id}\')', headers=self.get_headers())
-        handle_request(r)
-        self.name = r.json()['value'][0]['name']
-
+        self._get_name()
         self.get_datasets()
         self.get_reports()
     
     def get_headers(self):
-        return {'Authorization': f'Bearer {self.token.get_token()}'}
+        return self.tenant._get_headers()
+
+    def _get_name(self):
+        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups?$filter=contains(id,\'{self.id}\')', headers=self.get_headers())
+        json = handle_request(r)
+
+        self.name = json.get('value')[0]['name']
+        return self.name
+
+    def get_users_access(self):
+        """Fetches a fresh list of users with access to this workspace.
+        Includes both human and service principals.
+
+        :return: array of dictonaries, each representing a user
+        """
+
+        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/users', headers=self.get_headers())
+        json = handle_request(r)
+
+        self.users = json.get('value')
+        return self.users
+
+    def grant_user_access(self, user_access):
+        """Grant access to this workspace to the given user.
+        Will intelligently handle both create and update scenarios.
+        """
+
+        identifiers = [u.get('identifier') for u in self.get_users_access()] # list of emails/principal GUIDs
+        method = 'put' if user_access.get('identifier') in identifiers else 'post' # put/post based on whether user already exists
+        r = requests.request(method, f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/users', headers=self.get_headers(), json=user_access)
+        handle_request(r)
+
+    def copy_permissions(self, reference_workspace):
+        """Copying the access setup from another workspace.
+
+        :param reference_workspace: the workspace GUID of another workspace to copy access setup from
+        """
+
+        for user in reference_workspace.get_users_access():
+            self.grant_user_access(user)
 
     def get_datasets(self):
         """Fetches a fresh list of datasets from the PBI service.
@@ -99,9 +132,9 @@ class Workspace:
         return Report(self, json)
 
     def find_report(self, report_name):
-        """Tries to fetch the report with the given name. If more than one report is found, only the first is returned. The order is defined by Power BI.
-
-            \https://app.powerbi.com/groups/7b0ce7b6-5055-45b2-a15b-ffeb34a85368/reports/**4702db31-bc75-422c-92b4-b6a0809b0f1a**/ReportSection
+        """Tries to fetch the report with the given name.
+        If more than one report is found, only the first is returned.
+        The order is defined by Power BI.
 
         :param report_name: the report GUID
         :return: a :class:`~Report` object (or ``None``)
@@ -115,7 +148,8 @@ class Workspace:
                 return Report(self, r)
 
     def publish_file(self, filepath, name, skipReports=False):
-        """Publishes the given PBIX file to the workspace. If a model/report already exists with the same name, the new model/report is published alongside it.
+        """Publishes the given PBIX file to the workspace.
+        If a model/report already exists with the same name, the new model/report is published alongside it.
 
         :param filepath: absolute *or* relative path to the PBIX file which is to be published
         :param name: desired name for the model/report
@@ -213,7 +247,7 @@ class Workspace:
 
             return not error
 
-    def deploy(self, dataset_filepath, report_filepaths, dataset_params=None, credentials=None, force_refresh=False, on_report_success=None, name_builder=_name_builder, name_comparator=_name_comparator, config_workspace=None, **kwargs):
+    def deploy(self, dataset_filepath, report_filepaths, dataset_params=None, credentials=None, force_refresh=False, on_report_success=None, name_builder=_name_builder, name_comparator=_name_comparator, **kwargs):
         """Publishes a single model and an collection of associated reports. Note, currently only database authentication is supported, using either SQL logins or oauth tokens.
 
         There is a requirement for a dummy report called 'Deployment Aid Report' to exist either in the publishing workspace (default) or in a separate 'config' workspace.
@@ -261,8 +295,12 @@ class Workspace:
                 print(f'Report deployed! {report.name}')
         """
 
-        # 1. Get dummy connections string from 'aid report' (use config workspace if given, else content workspace)
-        aid_report = (config_workspace or self).find_report(AID_REPORT_NAME) # Find aid report to get new dataset connection string
+        # 1. Get dummy connections string from 'aid report' in config workspace
+        config_workspace = self.tenant.find_workspace(AID_WORKSPACE_NAME)
+        if config_workspace is None:
+            raise SystemExit('ERROR: Cannot find PBI Tools Config workspace')
+
+        aid_report = config_workspace.find_report(AID_REPORT_NAME) # Find aid report to get new dataset connection string
         if aid_report is None:
             raise SystemExit('ERROR: Cannot find Deployment Aid Report')
 

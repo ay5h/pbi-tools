@@ -4,3 +4,4 @@ from .datasource import Datasource
 from .report import Report
 from .token import Token
 from .workspace import Workspace
+from .tenant import Tenant
