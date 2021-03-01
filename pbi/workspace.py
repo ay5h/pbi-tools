@@ -322,7 +322,7 @@ class Workspace:
 
         # 3. Update params and credentials, then refresh (unless current)
         refresh_state = dataset.get_refresh_state()
-        if refresh_state == 'Complete':
+        if refresh_state == 'Completed':
             print('** Existing dataset valid')
         else:
             if refresh_state != 'Unknown': # Unknown == refreshing; therefore either last refresh failed, or there has never been a refresh attempt
