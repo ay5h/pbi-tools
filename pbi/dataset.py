@@ -61,10 +61,10 @@ class Dataset:
             elif url: # Web-based connections (e.g. Application Insights API)
                 domain = urlparse(url).netloc # Extract (sub)domain from full url endpoint
                 if domain in credentials:
-                    cred = credentials.get(server)
+                    cred = credentials.get(domain)
                     print(f'*** Updating credentials for {domain}')
+                    print(cred)
                     if 'token' in cred:
-                        print(cred)
                         datasource.update_credentials(token=cred['token'])
                     elif 'username' in cred:
                         datasource.update_credentials(cred['username'], cred['password'])
