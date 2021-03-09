@@ -1,6 +1,7 @@
 import time
 import json
 import requests
+from urllib.parse import urlparse
 from .tools import handle_request
 from .datasource import Datasource
         
@@ -36,22 +37,38 @@ class Dataset:
     def authenticate(self, credentials):
         """Use the provided credentials to reauthenticate datasources connected to this dataset. If any of the provided credentials do not match the data source they will be skipped.
 
-        Currently, only database credentials are supported using either SQL logins or oauth tokens.
+        Currently, only server and web-based credentials are supported using either username and password or oauth tokens.
 
         :param credentials: a dictionary of credentials (see examples in :meth:`~Workspace.refresh_datasets`)
         """
 
         for datasource in self.get_datasources():
             server = json.loads(datasource.connection_details).get('server')
-            if server in credentials:
-                cred = credentials.get(server)
-                print(f'*** Updating credentials for {server}')
-                if 'token' in cred:
-                    datasource.update_credentials(cred['token'])
-                elif 'username' in cred:
-                    datasource.update_credentials(cred['username'], cred['password'])
-            else:
-                print(f'*** No credentials provided for {server}. Using existing credentials.')
+            url = json.loads(datasource.connection_details).get('url')
+
+            if server: # Server-based connections (e.g. Azure Data Warehouse)
+                if server in credentials:
+                    cred = credentials.get(server)
+                    print(f'*** Updating credentials for {server}')
+                    if 'token' in cred:
+                        datasource.update_credentials(cred['token'])
+                    elif 'username' in cred:
+                        datasource.update_credentials(cred['username'], cred['password'])
+                else:
+                    print(f'*** No credentials provided for {server}. Using existing credentials.')
+            
+            elif url: # Web-based connections (e.g. Application Insights API)
+                domain = urlparse(url).netloc # Extract (sub)domain from full url endpoint
+                if domain in credentials:
+                    cred = credentials.get(server)
+                    print(f'*** Updating credentials for {domain}')
+                    if 'token' in cred:
+                        datasource.update_credentials(cred['token'])
+                    elif 'username' in cred:
+                        datasource.update_credentials(cred['username'], cred['password'])
+                else:
+                    print(f'*** No credentials provided for {domain}. Using existing credentials.')
+
  
     def trigger_refresh(self):
         """Trigger a refresh of this dataset. This is an async call and you will need to check the refresh status separately using :meth:`~get_refresh_state`
