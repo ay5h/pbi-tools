@@ -43,15 +43,16 @@ class Dataset:
         """
 
         for datasource in self.get_datasources():
-            server = json.loads(datasource.connection_details).get('server')
-            url = json.loads(datasource.connection_details).get('url')
+            connection = json.loads(datasource.connection_details)
+            server = connection.get('server')
+            url = connection.get('url')
 
             if server: # Server-based connections (e.g. Azure Data Warehouse)
                 if server in credentials:
                     cred = credentials.get(server)
                     print(f'*** Updating credentials for {server}')
                     if 'token' in cred:
-                        datasource.update_credentials(cred['token'])
+                        datasource.update_credentials(token=cred['token'])
                     elif 'username' in cred:
                         datasource.update_credentials(cred['username'], cred['password'])
                 else:
@@ -63,12 +64,14 @@ class Dataset:
                     cred = credentials.get(server)
                     print(f'*** Updating credentials for {domain}')
                     if 'token' in cred:
-                        datasource.update_credentials(cred['token'])
+                        datasource.update_credentials(token=cred['token'])
                     elif 'username' in cred:
                         datasource.update_credentials(cred['username'], cred['password'])
                 else:
                     print(f'*** No credentials provided for {domain}. Using existing credentials.')
 
+            else:
+                print(f'*** No credentials provided for {connection}. Using existing credentials.')
  
     def trigger_refresh(self):
         """Trigger a refresh of this dataset. This is an async call and you will need to check the refresh status separately using :meth:`~get_refresh_state`

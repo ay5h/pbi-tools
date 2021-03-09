@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='pbi-tools',
-    version='0.2.20',
+    version='0.2.22',
     packages=find_packages(exclude=['tests*']),
     license='MIT',
     description='Power BI REST API wrapper and other tools',
