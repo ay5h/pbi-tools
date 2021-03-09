@@ -64,6 +64,7 @@ class Dataset:
                     cred = credentials.get(server)
                     print(f'*** Updating credentials for {domain}')
                     if 'token' in cred:
+                        print(cred)
                         datasource.update_credentials(token=cred['token'])
                     elif 'username' in cred:
                         datasource.update_credentials(cred['username'], cred['password'])

@@ -53,6 +53,6 @@ class Datasource:
             "encryptionAlgorithm": "None",
             "privacyLevel": "Organizational"
         }}
-        print(payload)
+        
         r = requests.patch(f'https://api.powerbi.com/v1.0/myorg/gateways/{self.gateway_id}/datasources/{self.id}', headers=self.dataset.workspace.get_headers(), json=payload)
         handle_request(r)
