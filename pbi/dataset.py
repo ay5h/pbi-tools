@@ -49,8 +49,9 @@ class Dataset:
 
             if server: # Server-based connections (e.g. Azure Data Warehouse)
                 if server in credentials:
-                    cred = credentials.get(server)
                     print(f'*** Updating credentials for {server}')
+                    cred = credentials.get(server)
+                    
                     if 'token' in cred:
                         datasource.update_credentials(token=cred['token'])
                     elif 'username' in cred:
@@ -61,9 +62,9 @@ class Dataset:
             elif url: # Web-based connections (e.g. Application Insights API)
                 domain = urlparse(url).netloc # Extract (sub)domain from full url endpoint
                 if domain in credentials:
-                    cred = credentials.get(domain)
                     print(f'*** Updating credentials for {domain}')
-                    print(cred)
+                    cred = credentials.get(domain)
+
                     if 'token' in cred:
                         datasource.update_credentials(token=cred['token'])
                     elif 'username' in cred:
