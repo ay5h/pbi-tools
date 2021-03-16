@@ -1,12 +1,16 @@
 import os
 import zipfile as zf
 
-def handle_request(r, stop=True):
+def handle_request(r, allowed_codes=None):
+    if not allowed_codes: allowed_codes = [] # Default to empty list
+
     if not r.ok:
-        message = f'ERROR {r.status_code}: {r.text if r.text else "Unknown error"} when running {r.request.method} {r.url}'
+        message = f'{r.status_code}: {r.text if r.text else "Unknown error"} when running {r.request.method} {r.url}'
         
-        if stop: raise SystemExit(message)
-        else: print(message)
+        if r.status_code in allowed_codes:
+            raise SystemExit(f'ERROR {message}')
+        else:
+            print(f'WARNING: {message}')
 
     return r.json() if r.content else None
 
