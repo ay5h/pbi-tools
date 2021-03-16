@@ -70,4 +70,4 @@ class Report:
         """Delete this report from the workspace."""
 
         r = requests.delete(f'https://api.powerbi.com/v1.0/myorg/groups/{self.workspace.id}/reports/{self.id}', headers=self.workspace.get_headers())
-        handle_request(r)
+        handle_request(r, allowed_codes=[404]) # Don't fail it dataset has already been deleted
