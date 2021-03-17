@@ -8,9 +8,9 @@ def handle_request(r, allowed_codes=None):
         message = f'{r.status_code}: {r.text if r.text else "Unknown error"} when running {r.request.method} {r.url}'
         
         if r.status_code in allowed_codes:
-            raise SystemExit(f'ERROR {message}')
-        else:
             print(f'WARNING: {message}')
+        else:
+            raise SystemExit(f'ERROR {message}')
 
     return r.json() if r.content else None
 
