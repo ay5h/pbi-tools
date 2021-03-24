@@ -32,26 +32,27 @@ class Datasource:
 
         if token:
             auth = 'OAuth2'
-            credentials = {"credentialData": [{
-                "name": "accessToken",
-                "value": token.get_token()
+            credentials = {'credentialData': [{
+                'name': 'accessToken',
+                'value': token.get_token()
             }]}
         else:
             auth = 'Basic'
-            credentials = {"credentialData": [{
-                "name": "username",
-                "value": username
+            credentials = {'credentialData': [{
+                'name': 'username',
+                'value': username
             }, {
-                "name": "password",
-                "value": password
+                'name': 'password',
+                'value': password
             }]}
 
         payload = {'credentialDetails': {
-            "credentialType": auth,
-            "credentials": json.dumps(credentials),
-            "encryptedConnection": "Encrypted",
-            "encryptionAlgorithm": "None",
-            "privacyLevel": "Organizational"
+            'credentialType': auth,
+            'credentials': json.dumps(credentials),
+            'encryptedConnection': 'Encrypted',
+            'encryptionAlgorithm': 'None',
+            'privacyLevel': 'Organizational',
+            'useEndUserOAuth2Credentials': 'False' # required to avoid direct query connections 'expiring'
         }}
         
         r = requests.patch(f'https://api.powerbi.com/v1.0/myorg/gateways/{self.gateway_id}/datasources/{self.id}', headers=self.dataset.workspace.get_headers(), json=payload)
