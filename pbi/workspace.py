@@ -226,6 +226,7 @@ class Workspace:
 
                     print(f'*** Starting refresh...') # We check back later for completion
                     dataset.trigger_refresh()
+                    time.sleep(5) # Wait a moment before continuing as the refresh takes doesn't register immediately (if not, we might not see the refresh status when we check)
 
             except SystemExit as e:
                 print(f'!! ERROR. Triggering refresh failed for [{dataset.name}]. {e}')
