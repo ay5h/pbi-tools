@@ -52,6 +52,7 @@ class Datasource:
             'encryptedConnection': 'Encrypted',
             'encryptionAlgorithm': 'None',
             'privacyLevel': 'Organizational',
+            'useCallerAADIdentity': 'False', # required to avoid direct query connections 'expiring'
             'useEndUserOAuth2Credentials': 'False' # required to avoid direct query connections 'expiring'
         }}
         
