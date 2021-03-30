@@ -339,7 +339,7 @@ class Workspace:
 
                 print('*** Triggering refresh') # We check back later for completion
                 dataset.trigger_refresh()
-                time.sleep(5) # Wait a moment before continuing as the refresh takes doesn't register immediately (if not, we might not see the refresh status when we check)
+                time.sleep(10) # Wait a moment before continuing as the refresh takes doesn't register immediately (if not, we might not see the refresh status when we check)
 
             # 4. Wait for refresh to complete (stop on error)
             refresh_state = dataset.get_refresh_state(wait=True) # Wait for any dataset refreshes to finish before continuing
