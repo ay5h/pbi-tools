@@ -84,17 +84,21 @@ class Dataset:
         r = requests.post(f'https://api.powerbi.com/v1.0/myorg/groups/{self.workspace.id}/datasets/{self.id}/refreshes', headers=self.workspace.get_headers())
         handle_request(r)
 
-    def get_refresh_state(self, wait=False):
+    def get_refresh_state(self, wait=False, retries=5):
         """Check the status of the latest refresh of this dataset. If there is no completed or in progress refresh, returns 'No refreshes'.
 
         :param wait: if there is a refresh in progress, whether to keep checking until it completed or return an 'Unknown' status first time (i.e. in progress)
+        :param retries: if we ask Power BI about the state of a refresh too quickly, it will return empty; this states how many times to try again before giving up
         """
 
         r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.workspace.id}/datasets/{self.id}/refreshes?$top=1', headers=self.workspace.get_headers())
         handle_request(r)
         
         if len(r.json()['value']) == 0:
-            return 'No refreshes'
+            if retries > 0:
+                self.get_refresh_state(self, wait=wait, retries=retries-1)
+            else:
+                return 'No refreshes'
         else:
             refresh = r.json()['value'][0]
             if wait and refresh['status'] == 'Unknown': # still refreshing
