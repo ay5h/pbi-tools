@@ -96,9 +96,11 @@ class Dataset:
         
         if len(r.json()['value']) == 0:
             if retries > 0:
-                self.get_refresh_state(self, wait=wait, retries=retries-1)
+                print(f'No refresh found, trying again. Retries remaining: {retries}')
+                time.sleep(60)
+                self.get_refresh_state(wait=wait, retries=retries-1)
             else:
-                return 'No refreshes'
+                return 'No refresh found'
         else:
             refresh = r.json()['value'][0]
             if wait and refresh['status'] == 'Unknown': # still refreshing
