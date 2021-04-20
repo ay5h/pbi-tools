@@ -98,7 +98,7 @@ class Dataset:
             if retries > 0:
                 print(f'No refresh found, trying again. Retries remaining: {retries}')
                 time.sleep(60)
-                self.get_refresh_state(wait=wait, retries=retries-1)
+                return self.get_refresh_state(wait, retries=retries-1)
             else:
                 return 'No refresh found'
         else:
