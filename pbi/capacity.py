@@ -20,11 +20,12 @@ class Capacity:
         self.subscription_id = subscription_id
         self.resource_group_name = resource_group_name
         self.capacity_name = capacity_name
-        self.skus = self.get_skus()
 
         pbi_oauth_url = f'https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token'
         scope = 'https://management.azure.com/.default'
         self.token = Token(pbi_oauth_url, scope, principal, secret)
+
+        self.skus = self.get_skus()
 
     def get_skus(self):
         """Fetch a list of all available SKUs for this capacity.
