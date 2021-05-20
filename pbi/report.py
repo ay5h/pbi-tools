@@ -26,7 +26,7 @@ class Report:
         payload = {
             'datasetId': dataset.id
         }
-        r = requests.post(f'https://api.powerbi.com/v1.0/myorg/groups/{self.workspace.id}/reports/{self.id}/Rebind', headers=self.workspace.get_headers(), json=payload)
+        r = requests.post(f'https://api.powerbi.com/v1.0/myorg/groups/{self.workspace.id}/reports/{self.id}/Rebind', headers=self.workspace.tenant.token.get_headers(), json=payload)
         handle_request(r)
         self.dataset = dataset
 
@@ -40,7 +40,7 @@ class Report:
         payload = {
             'name': new_name
         }
-        r = requests.post(f'https://api.powerbi.com/v1.0/myorg/groups/{self.workspace.id}/reports/{self.id}/Clone', headers=self.workspace.get_headers(), json=payload)
+        r = requests.post(f'https://api.powerbi.com/v1.0/myorg/groups/{self.workspace.id}/reports/{self.id}/Clone', headers=self.workspace.tenant.token.get_headers(), json=payload)
         json = handle_request(r)
 
         return Report(self.workspace, json) # Return new report object
@@ -63,11 +63,11 @@ class Report:
     def download(self):
         """Download this report from the workspace to the current working directory."""
 
-        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.workspace.id}/reports/{self.id}/Export', headers=self.workspace.get_headers())
+        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.workspace.id}/reports/{self.id}/Export', headers=self.workspace.tenant.token.get_headers())
         return r.content
 
     def delete(self):
         """Delete this report from the workspace."""
 
-        r = requests.delete(f'https://api.powerbi.com/v1.0/myorg/groups/{self.workspace.id}/reports/{self.id}', headers=self.workspace.get_headers())
+        r = requests.delete(f'https://api.powerbi.com/v1.0/myorg/groups/{self.workspace.id}/reports/{self.id}', headers=self.workspace.tenant.token.get_headers())
         handle_request(r, allowed_codes=[404]) # Don't fail it dataset has already been deleted

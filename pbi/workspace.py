@@ -35,12 +35,9 @@ class Workspace:
         self._get_name()
         self.get_datasets()
         self.get_reports()
-    
-    def get_headers(self):
-        return self.tenant._get_headers()
 
     def _get_name(self):
-        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups?$filter=contains(id,\'{self.id}\')', headers=self.get_headers())
+        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups?$filter=contains(id,\'{self.id}\')', headers=self.tenant.token.get_headers())
         json = handle_request(r)
 
         self.name = json.get('value')[0]['name']
@@ -53,7 +50,7 @@ class Workspace:
         :return: array of dictonaries, each representing a user
         """
 
-        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/users', headers=self.get_headers())
+        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/users', headers=self.tenant.token.get_headers())
         json = handle_request(r)
 
         self.users = json.get('value')
@@ -66,7 +63,7 @@ class Workspace:
 
         identifiers = [u.get('identifier') for u in self.get_users_access()] # list of emails/principal GUIDs
         method = 'put' if user_access.get('identifier') in identifiers else 'post' # put/post based on whether user already exists
-        r = requests.request(method, f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/users', headers=self.get_headers(), json=user_access)
+        r = requests.request(method, f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/users', headers=self.tenant.token.get_headers(), json=user_access)
         handle_request(r)
 
     def copy_permissions(self, reference_workspace):
@@ -84,7 +81,7 @@ class Workspace:
         :return: array of :class:`~Dataset` objects
         """
 
-        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/datasets', headers=self.get_headers())
+        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/datasets', headers=self.tenant.token.get_headers())
         json = handle_request(r)
 
         self.datasets = [Dataset(self, d) for d in json.get('value')]
@@ -99,7 +96,7 @@ class Workspace:
         :return: a :class:`~Dataset` object
         """
 
-        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/datasets/{dataset_id}', headers=self.get_headers())
+        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/datasets/{dataset_id}', headers=self.tenant.token.get_headers())
         json = handle_request(r)
 
         return Dataset(self, json)
@@ -110,7 +107,7 @@ class Workspace:
         :return: array of :class:`~Report` objects
         """
 
-        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/reports', headers=self.get_headers())
+        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/reports', headers=self.tenant.token.get_headers())
         handle_request(r)
 
         reports = r.json()['value']
@@ -126,7 +123,7 @@ class Workspace:
         :return: a :class:`~Report` object
         """
 
-        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/reports/{report_id}', headers=self.get_headers())
+        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/reports/{report_id}', headers=self.tenant.token.get_headers())
         json = handle_request(r)
 
         return Report(self, json)
@@ -140,7 +137,7 @@ class Workspace:
         :return: a :class:`~Report` object (or ``None``)
         """
 
-        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/reports', headers=self.get_headers())
+        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/reports', headers=self.tenant.token.get_headers())
         json = handle_request(r)
 
         for r in json.get('value'):
@@ -164,13 +161,13 @@ class Workspace:
         with open(filepath, 'rb') as f:
             payload['file'] = open(filepath, 'rb')
 
-        r = requests.post(f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/imports', params=params, headers=self.get_headers(), files=payload)
+        r = requests.post(f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/imports', params=params, headers=self.tenant.token.get_headers(), files=payload)
         json = handle_request(r)
         import_id = json.get('id')
 
         # Check whether import has finished, wait and retry if not
         while True:
-            r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/imports/{import_id}', headers=self.get_headers())
+            r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/imports/{import_id}', headers=self.tenant.token.get_headers())
             json = handle_request(r)
             import_status = json.get('importState')
 
