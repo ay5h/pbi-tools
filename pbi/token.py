@@ -47,3 +47,10 @@ class Token:
         if not self.__token or self.__token_expiry < datetime.now():
             self.refresh()
         return self.__token
+
+    def get_headers(self):
+        """Returns a response header containing the Bearer token.
+        
+        :return: response header as JSON
+        """
+        return {'Authorization': f'Bearer {self.get_token()}'}

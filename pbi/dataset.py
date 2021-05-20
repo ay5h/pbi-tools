@@ -27,7 +27,7 @@ class Dataset:
         :return: array of :class:`~Datasource` objects
         """
 
-        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.workspace.id}/datasets/{self.id}/Default.GetBoundGatewayDatasources', headers=self.workspace.get_headers())
+        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.workspace.id}/datasets/{self.id}/Default.GetBoundGatewayDatasources', headers=self.workspace.tenant.token.get_headers())
         handle_request(r)
 
         datasources = r.json()['value']
@@ -81,7 +81,7 @@ class Dataset:
         :param credentials: a dictionary of credentials (see examples in :meth:`~Workspace.refresh_datasets`)
         """
 
-        r = requests.post(f'https://api.powerbi.com/v1.0/myorg/groups/{self.workspace.id}/datasets/{self.id}/refreshes', headers=self.workspace.get_headers())
+        r = requests.post(f'https://api.powerbi.com/v1.0/myorg/groups/{self.workspace.id}/datasets/{self.id}/refreshes', headers=self.workspace.tenant.token.get_headers())
         handle_request(r)
 
     def get_refresh_state(self, wait=False, retries=5):
@@ -91,7 +91,7 @@ class Dataset:
         :param retries: if we ask Power BI about the state of a refresh too quickly, it will return empty; this states how many times to try again before giving up
         """
 
-        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.workspace.id}/datasets/{self.id}/refreshes?$top=1', headers=self.workspace.get_headers())
+        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.workspace.id}/datasets/{self.id}/refreshes?$top=1', headers=self.workspace.tenant.token.get_headers())
         handle_request(r)
         
         if len(r.json()['value']) == 0:
@@ -118,7 +118,7 @@ class Dataset:
         :return: array of dictionaries - parameter name sits in ``name`` key
         """
 
-        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.workspace.id}/datasets/{self.id}/parameters', headers=self.workspace.get_headers())
+        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.workspace.id}/datasets/{self.id}/parameters', headers=self.workspace.tenant.token.get_headers())
         json = handle_request(r)
         return json.get('value')
     
@@ -134,7 +134,7 @@ class Dataset:
             >>> dataset.update_params({'updateDetails': [param1, param2]]}
         """
 
-        r = requests.post(f'https://api.powerbi.com/v1.0/myorg/groups/{self.workspace.id}/datasets/{self.id}/Default.UpdateParameters', headers=self.workspace.get_headers(), json=params)
+        r = requests.post(f'https://api.powerbi.com/v1.0/myorg/groups/{self.workspace.id}/datasets/{self.id}/Default.UpdateParameters', headers=self.workspace.tenant.token.get_headers(), json=params)
         handle_request(r)
 
     def take_ownership(self):
@@ -143,11 +143,11 @@ class Dataset:
         If the user does not have ownership of the model, some other actions will fail (e.g. :meth:`~update_params`, :meth:`~authenticate`)
         """
 
-        r = requests.post(f'https://api.powerbi.com/v1.0/myorg/groups/{self.workspace.id}/datasets/{self.id}/Default.TakeOver', headers=self.workspace.get_headers())
+        r = requests.post(f'https://api.powerbi.com/v1.0/myorg/groups/{self.workspace.id}/datasets/{self.id}/Default.TakeOver', headers=self.workspace.tenant.token.get_headers())
         handle_request(r)
 
     def delete(self):
         """Delete this model from the workspace."""
 
-        r = requests.delete(f'https://api.powerbi.com/v1.0/myorg/groups/{self.workspace.id}/datasets/{self.id}', headers=self.workspace.get_headers())
+        r = requests.delete(f'https://api.powerbi.com/v1.0/myorg/groups/{self.workspace.id}/datasets/{self.id}', headers=self.workspace.tenant.token.get_headers())
         handle_request(r, allowed_codes=[404]) # Don't fail it dataset has already been deleted
