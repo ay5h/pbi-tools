@@ -244,7 +244,7 @@ class Workspace:
 
             return not error
 
-    def deploy(self, dataset_filepath, report_filepaths, dataset_params=None, credentials=None, force_refresh=False, on_report_success=None, name_builder=_name_builder, name_comparator=_name_comparator, **kwargs):
+    def deploy(self, dataset_filepath, report_filepaths, dataset_params=None, credentials=None, force_refresh=False, delete_previous=True, on_report_success=None, name_builder=_name_builder, name_comparator=_name_comparator, **kwargs):
         """Publishes a single model and an collection of associated reports. Note, currently only database authentication is supported, using either SQL logins or oauth tokens.
 
         There is a requirement for a dummy report called 'Deployment Aid Report' to exist either in the publishing workspace (default) or in a separate 'config' workspace.
@@ -309,13 +309,13 @@ class Workspace:
         dataset_name = name_builder(dataset_filepath, **kwargs)
         matching_datasets = [d for d in self.datasets if name_comparator(d.name, dataset_name)] # Look for existing dataset
 
-        if matching_datasets and not force_refresh: # Only publish dataset if it's been updated (or override used):
-            dataset = matching_datasets.pop() # Get the latest dataset
-            print(f'** Using existing dataset [{dataset.name}]')
-        else:
+        if not matching_datasets or force_refresh: # Only publish dataset if there isn't one already, or it's marked as needing a refresh
             print(f'** Publishing dataset [{dataset_filepath}] as [{dataset_name}]...')
             new_datasets, new_reports = self.publish_file(dataset_filepath, dataset_name, skipReports=True)
             dataset = new_datasets.pop()
+        else:
+            dataset = matching_datasets.pop() # Get the latest dataset (and remove from list of matches, which is deleted later)
+            print(f'** Using existing dataset [{dataset.name}]')
 
         # 3. Update params and credentials, then refresh (unless current)
         refresh_state = dataset.get_refresh_state()
@@ -360,14 +360,15 @@ class Workspace:
                         on_report_success(report, **kwargs) # Perform any final post-deploy actions
                     except Exception as e:
                         print(f'! WARNING. Error executing post-deploy steps. {e}')
-                        error = True
 
             # 7. Delete old reports
-            for old_report in matching_reports:
-                print(f'*** Deleting old report [{old_report.name}]')
-                old_report.delete()
+            if delete_previous:
+                for old_report in matching_reports:
+                    print(f'*** Deleting old report [{old_report.name}]')
+                    old_report.delete()
 
         # 8. Delete old models
-        for old_dataset in matching_datasets:
-            print(f'** Deleting old dataset [{old_dataset.name}]')
-            old_dataset.delete()
+        if delete_previous:
+            for old_dataset in matching_datasets:
+                print(f'** Deleting old dataset [{old_dataset.name}]')
+                old_dataset.delete()
