@@ -50,17 +50,18 @@ class Dataset:
             if server: # Server-based connections (e.g. Azure Data Warehouse)
             
                 print(f'*** AYSHA *** Reached to Server-based connections for {server}')
+                cred = credentials.get(server)
 
-#                if server in credentials:
+                if server in credentials:
                     print(f'*** Updating credentials for {server}')
                     cred = credentials.get(server)
                     
-#                    if 'token' in cred:
-#                        datasource.update_credentials(token=cred['token'])
-#                    elif 'username' in cred:
-#                        datasource.update_credentials(cred['username'], cred['password'])
-#                else:
-#                    print(f'*** No credentials provided for {server}. Using existing credentials.')
+                    if 'token' in cred:
+                        datasource.update_credentials(token=cred['token'])
+                    elif 'username' in cred:
+                        datasource.update_credentials(cred['username'], cred['password'])
+                else:
+                    print(f'*** No credentials provided for {server}. Using existing credentials.')
             
             elif url: # Web-based connections (e.g. Application Insights API)
                 domain = urlparse(url).netloc # Extract (sub)domain from full url endpoint
