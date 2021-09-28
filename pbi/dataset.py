@@ -50,6 +50,7 @@ class Dataset:
             if server: # Server-based connections (e.g. Azure Data Warehouse)
             
                 print(f'*** AYSHA *** Reached to Server-based connections for {server}')
+                cred = credentials.get(server)
 
                 if server in credentials:
                     print(f'*** Updating credentials for {server}')
