@@ -373,7 +373,7 @@ class Workspace:
                 for report in matching_reports: report.repoint(aid_model)
 
             print(f'** Publishing report [{filepath}] as [{report_name}]...') # Alter PBIX file with dummy dataset, in case dataset used during development has since been deleted (we repoint once on service)
-            rebind_report(filepath, connection_string)
+      #      rebind_report(filepath, connection_string)
             new_datasets, new_reports = self.publish_file(filepath, report_name, overwrite_reports=overwrite_reports)
 
             # 6. Repoint to refreshed model and update Portals (if given)
