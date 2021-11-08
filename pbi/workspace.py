@@ -331,13 +331,13 @@ class Workspace:
         dataset_name = name_builder(dataset_filepath, **kwargs)
         matching_datasets = [d for d in self.datasets if name_comparator(d.name, dataset_name, overwrite_reports)] # Look for existing dataset
 
-        if matching_datasets and not force_refresh: # Only publish dataset if it's been updated (or override used):
-            dataset = matching_datasets.pop() # Get the latest dataset
-            print(f'** Using existing dataset [{dataset.name}]')
-        else:
+        if not matching_datasets or force_refresh: # Only publish dataset if there isn't one already, or it's marked as needing a refresh
             print(f'** Publishing dataset [{dataset_filepath}] as [{dataset_name}]...')
             new_datasets, new_reports = self.publish_file(dataset_filepath, dataset_name, skipReports=True, overwrite_reports=overwrite_reports)
             dataset = new_datasets.pop()
+        else:
+            dataset = matching_datasets.pop() # Get the latest dataset (and remove from list of matches, which is deleted later)
+            print(f'** Using existing dataset [{dataset.name}]')
 
         # 3. Update params and credentials, then refresh (unless current)
         refresh_state = dataset.get_refresh_state()
@@ -384,7 +384,6 @@ class Workspace:
                         on_report_success(report, **kwargs) # Perform any final post-deploy actions
                     except Exception as e:
                         print(f'! WARNING. Error executing post-deploy steps. {e}')
-                        error = True
 
             # 7. Delete old reports
             if not overwrite_reports:
