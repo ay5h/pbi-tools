@@ -1,8 +1,8 @@
 from setuptools import setup, find_packages
+import versioneer
 
 setup(
     name='pbi-tools',
-    version='0.2.25',
     packages=find_packages(exclude=['tests*']),
     license='MIT',
     description='Power BI REST API wrapper and other tools',
@@ -10,5 +10,7 @@ setup(
     install_requires=['requests'],
     url='https://github.com/thomas-daughters/pbi-tools',
     author='Sam Thomas',
-    author_email='sam.thomas@redkite.com'
+    author_email='sam.thomas@redkite.com',
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass()
 )
