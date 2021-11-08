@@ -8,12 +8,13 @@ from .tools import handle_request, get_connection_string, rebind_report
 
 AID_WORKSPACE_NAME = 'Deployment Aid'
 AID_REPORT_NAME = 'Deployment Aid Report'
+AID_MODEL_NAME = 'Deployment Aid Model'
 
 def _name_builder(filepath, **kwargs):
     filename = path.basename(filepath)
     return path.splitext(filename)[0] # Get file stem (i.e. no extension)
 
-def _name_comparator(a, b):
+def _name_comparator(a, b, **kwargs):
     return a == b
         
 class Workspace:
@@ -101,6 +102,22 @@ class Workspace:
 
         return Dataset(self, json)
 
+    def find_dataset(self, dataset_name):
+        """Tries to fetch the dataset with the given name.
+        If more than one dataset is found, only the first is returned.
+        The order is defined by Power BI.
+
+        :param report_name: the dataset name
+        :return: a :class:`~Dataset` object (or ``None``)
+        """
+
+        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/datasets', headers=self.tenant.token.get_headers())
+        json = handle_request(r)
+
+        for r in json.get('value'):
+            if r.get('name') == dataset_name:
+                return Dataset(self, r)
+
     def get_reports(self):
         """Fetches a fresh list of reports from the PBI service.
 
@@ -133,7 +150,7 @@ class Workspace:
         If more than one report is found, only the first is returned.
         The order is defined by Power BI.
 
-        :param report_name: the report GUID
+        :param report_name: the report name
         :return: a :class:`~Report` object (or ``None``)
         """
 
@@ -144,7 +161,7 @@ class Workspace:
             if r.get('name') == report_name:
                 return Report(self, r)
 
-    def publish_file(self, filepath, name, skipReports=False):
+    def publish_file(self, filepath, name, skipReports=False, overwrite_reports=False):
         """Publishes the given PBIX file to the workspace.
         If a model/report already exists with the same name, the new model/report is published alongside it.
 
@@ -154,7 +171,8 @@ class Workspace:
         :return: a tuple of arrays - first of :class:`~Dataset` objects, second of :class:`~Report` objects
         """
 
-        params = {'datasetDisplayName': name + '.pbix'}
+        nameConflict = 'CreateOrOverwrite' if overwrite_reports else 'Ignore'
+        params = {'datasetDisplayName': name + '.pbix', 'nameConflict': nameConflict}
         if skipReports: params['skipReport'] = 'true'
 
         payload = {}
@@ -244,7 +262,7 @@ class Workspace:
 
             return not error
 
-    def deploy(self, dataset_filepath, report_filepaths, dataset_params=None, credentials=None, force_refresh=False, delete_previous=True, on_report_success=None, name_builder=_name_builder, name_comparator=_name_comparator, **kwargs):
+    def deploy(self, dataset_filepath, report_filepaths, dataset_params=None, credentials=None, force_refresh=False, on_report_success=None, name_builder=_name_builder, name_comparator=_name_comparator, overwrite_reports=False, **kwargs):
         """Publishes a single model and an collection of associated reports. Note, currently only database authentication is supported, using either SQL logins or oauth tokens.
 
         There is a requirement for a dummy report called 'Deployment Aid Report' to exist either in the publishing workspace (default) or in a separate 'config' workspace.
@@ -301,17 +319,21 @@ class Workspace:
         if aid_report is None:
             raise SystemExit('ERROR: Cannot find Deployment Aid Report')
 
+        aid_model = config_workspace.find_dataset(AID_MODEL_NAME)
+        if aid_model is None:
+            raise SystemExit('ERROR: Cannot find Deployment Aid Model')
+
         with open(AID_REPORT_NAME, 'wb') as report_file: # Get connection string from aid report
             report_file.write(aid_report.download())
         connection_string = get_connection_string(AID_REPORT_NAME)
 
         # 2. Publish dataset or get existing dataset (if unchanged and current)
         dataset_name = name_builder(dataset_filepath, **kwargs)
-        matching_datasets = [d for d in self.datasets if name_comparator(d.name, dataset_name)] # Look for existing dataset
+        matching_datasets = [d for d in self.datasets if name_comparator(d.name, dataset_name, overwrite_reports)] # Look for existing dataset
 
         if not matching_datasets or force_refresh: # Only publish dataset if there isn't one already, or it's marked as needing a refresh
             print(f'** Publishing dataset [{dataset_filepath}] as [{dataset_name}]...')
-            new_datasets, new_reports = self.publish_file(dataset_filepath, dataset_name, skipReports=True)
+            new_datasets, new_reports = self.publish_file(dataset_filepath, dataset_name, skipReports=True, overwrite_reports=overwrite_reports)
             dataset = new_datasets.pop()
         else:
             dataset = matching_datasets.pop() # Get the latest dataset (and remove from list of matches, which is deleted later)
@@ -319,7 +341,7 @@ class Workspace:
 
         # 3. Update params and credentials, then refresh (unless current)
         refresh_state = dataset.get_refresh_state()
-        if refresh_state == 'Completed':
+        if refresh_state == 'Completed' and not overwrite_reports:
             print('** Existing dataset valid')
         else:
             if refresh_state != 'Unknown': # Unknown == refreshing; therefore either last refresh failed, or there has never been a refresh attempt
@@ -346,11 +368,13 @@ class Workspace:
         # 5. Publish reports (using dummy connection string initially)
         for filepath in report_filepaths: # Import report files
             report_name = name_builder(filepath, **kwargs)
-            matching_reports = [r for r in self.reports if name_comparator(r.name, report_name)] # Look for existing reports
+            matching_reports = [r for r in self.reports if name_comparator(r.name, report_name, overwrite_reports)] # Look for existing reports
+            if overwrite_reports:
+                for report in matching_reports: report.repoint(aid_model)
 
             print(f'** Publishing report [{filepath}] as [{report_name}]...') # Alter PBIX file with dummy dataset, in case dataset used during development has since been deleted (we repoint once on service)
             rebind_report(filepath, connection_string)
-            new_datasets, new_reports = self.publish_file(filepath, report_name)
+            new_datasets, new_reports = self.publish_file(filepath, report_name, overwrite_reports=overwrite_reports)
 
             # 6. Repoint to refreshed model and update Portals (if given)
             for report in new_reports:
@@ -362,13 +386,13 @@ class Workspace:
                         print(f'! WARNING. Error executing post-deploy steps. {e}')
 
             # 7. Delete old reports
-            if delete_previous:
+            if not overwrite_reports:
                 for old_report in matching_reports:
                     print(f'*** Deleting old report [{old_report.name}]')
                     old_report.delete()
 
         # 8. Delete old models
-        if delete_previous:
+        if not overwrite_reports:
             for old_dataset in matching_datasets:
                 print(f'** Deleting old dataset [{old_dataset.name}]')
                 old_dataset.delete()
