@@ -1,4 +1,4 @@
-name: Publish Python distributions to PyPI and TestPyPI
+name: Bump Git tag (if on main), then publish Python distributions to PyPI Test and PyPI (if on main)
 
 on: push
 
@@ -8,7 +8,13 @@ jobs:
     runs-on: ubuntu-18.04
 
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v2
+
+      - name: Bump version and push tag
+        if: github.ref == 'refs/heads/main'
+        uses: anothrNick/github-tag-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Fetch all history for all tags and branches
         run: git fetch --prune --unshallow
@@ -33,13 +39,13 @@ jobs:
           --wheel
           --outdir dist/
           .
-
-      - name: Publish distribution to Test PyPI
+          
+      - name: Publish distribution to PyPI Test
         uses: pypa/gh-action-pypi-publish@master
         with:
           password: ${{ secrets.TEST_PYPI_API_TOKEN }}
           repository_url: https://test.pypi.org/legacy/
-          
+
       - name: Publish distribution to PyPI
         if: github.ref == 'refs/heads/main'
         uses: pypa/gh-action-pypi-publish@master
