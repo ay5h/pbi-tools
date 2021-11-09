@@ -1,2 +1,2 @@
 include versioneer.py
-include pbi/_version.py
+include src/pbi/_version.py
