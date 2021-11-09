@@ -1,1 +1,1 @@
-pbi/_version.py export-subst
+src/pbi/_version.py export-subst
