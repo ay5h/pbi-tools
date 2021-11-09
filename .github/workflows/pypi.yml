@@ -9,6 +9,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@master
+
+      - name: Fetch all history for all tags and branches
+        run: git fetch --prune --unshallow
       
       - name: Set up Python 3.9
         uses: actions/setup-python@v1
@@ -21,6 +24,7 @@ jobs:
           pip install
           build
           --user
+
       - name: Build a binary wheel and a source tarball
         run: >-
           python -m
