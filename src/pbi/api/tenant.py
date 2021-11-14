@@ -1,9 +1,8 @@
 import requests
 
-from .token import Token
 from .workspace import Workspace
-from .tools import handle_request
-
+from pbi.token import Token
+from pbi.tools import handle_request
 
 class Tenant:
     """An object representing an Azure tenant.
@@ -18,6 +17,8 @@ class Tenant:
         pbi_oauth_url = f"https://login.microsoftonline.com/{id}/oauth2/v2.0/token"
         scope = "https://analysis.windows.net/powerbi/api/.default"
         self.token = Token(pbi_oauth_url, scope, sp, secret)
+        
+        self.get_workspaces()
 
     def _get_headers(self):
         return {"Authorization": f"Bearer {self.token.get_token()}"}

@@ -4,7 +4,7 @@ from os import path
 
 from .report import Report
 from .dataset import Dataset
-from .tools import handle_request, get_connection_string, rebind_report
+from pbi.tools import handle_request, get_connection_string, rebind_report
 
 AID_WORKSPACE_NAME = "Deployment Aid"
 AID_REPORT_NAME = "Deployment Aid Report"

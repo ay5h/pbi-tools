@@ -2,7 +2,7 @@ import time
 import json
 import requests
 from urllib.parse import urlparse
-from .tools import handle_request
+from pbi.tools import handle_request
 from .datasource import Datasource
 
 

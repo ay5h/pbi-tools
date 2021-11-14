@@ -1,6 +1,6 @@
 import json
 import requests
-from .tools import handle_request
+from pbi.tools import handle_request
 
 
 class Datasource:

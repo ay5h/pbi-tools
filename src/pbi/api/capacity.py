@@ -1,7 +1,7 @@
 import requests
 
-from .token import Token
-from .tools import handle_request
+from pbi.token import Token
+from pbi.token import handle_request
 
 
 class Capacity:

@@ -1,5 +1,5 @@
 import requests
-from pbi.tools import handle_request
+from .tools import handle_request
 
 
 class Portal:

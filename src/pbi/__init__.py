@@ -2,7 +2,6 @@ from . import api
 
 from . import tools
 from . import deploy
-from .tenant import Tenant
 from .token import Token
 from .portal import Portal
 
