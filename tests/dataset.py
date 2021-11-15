@@ -1,6 +1,6 @@
 import os
-from src.pbi.token import Token
-from src.pbi.api.workspace import Workspace
+from pbi.token import Token
+from pbi.api.workspace import Workspace
 
 tenant_id = os.environ.get("TENANTID")
 workspace_id = os.environ.get("WORKSPACE_ID")
