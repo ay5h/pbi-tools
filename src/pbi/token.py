@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta
 import requests
 from .tools import handle_request
-        
+
+
 class Token:
     """An object representing an oauth token. Currently, authentication must use a service principal.
 
@@ -13,7 +14,7 @@ class Token:
     :param secret: associated secret value to authenticate the service principal
     :return: :class:`~Token` object
     """
-    
+
     def __init__(self, url, scope, principal, secret):
         self.url = url
         self.scope = scope
@@ -25,22 +26,22 @@ class Token:
         """Renew the token using same credentials."""
 
         payload = {
-            'grant_type': 'client_credentials',
-            'scope': self.scope,
-            'client_id': self.principal,
-            'client_secret': self.secret
+            "grant_type": "client_credentials",
+            "scope": self.scope,
+            "client_id": self.principal,
+            "client_secret": self.secret,
         }
         r = requests.post(self.url, payload)
         handle_request(r)
 
-        self.__token = r.json()['access_token']
-        self.__token_expiry = datetime.now() + timedelta(minutes = 30)
+        self.__token = r.json()["access_token"]
+        self.__token_expiry = datetime.now() + timedelta(minutes=30)
 
     def get_token(self):
         """Returns a token string, renewing it first with the oauth provider if it has been more the 30 minutes since the last renewal.
-        
+
         Using this method means you don't have to worry about token expiry (except see :meth:`~Datasource.update_credentials` for issues with data refresh timeouts).
-        
+
         :return: oauth token string
         """
 
@@ -50,7 +51,7 @@ class Token:
 
     def get_headers(self):
         """Returns a response header containing the Bearer token.
-        
+
         :return: response header as JSON
         """
-        return {'Authorization': f'Bearer {self.get_token()}'}
+        return {"Authorization": f"Bearer {self.get_token()}"}

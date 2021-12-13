@@ -1,27 +1,26 @@
+import os
 import time
 import requests
 from os import path
 
 from .report import Report
 from .dataset import Dataset
-from .tools import handle_request, get_connection_string, rebind_report
-
-AID_WORKSPACE_NAME = 'Deployment Aid'
-AID_REPORT_NAME = 'Deployment Aid Report'
-AID_MODEL_NAME = 'Deployment Aid Model'
+from pbi.tools import handle_request, rebind_report
 
 def _name_builder(filepath, **kwargs):
     filename = path.basename(filepath)
-    return path.splitext(filename)[0] # Get file stem (i.e. no extension)
+    return path.splitext(filename)[0]  # Get file stem (i.e. no extension)
+
 
 def _name_comparator(a, b, **kwargs):
     return a == b
-        
+
+
 class Workspace:
     """An object representing a Power BI workspace. You can find the GUID by going to the workspace and inspecting the URL:
 
         \https://app.powerbi.com/groups/**7b0ce7b6-5055-45b2-a15b-ffeb34a85368**/list/dashboards
-    
+
     :param id: the Power BI workspace GUID
     :param tenant_id: the Azure tenant GUID in which the Power BI workspace lives
     :param principal: service principal GUID
@@ -32,16 +31,19 @@ class Workspace:
     def __init__(self, tenant, id):
         self.id = id
         self.tenant = tenant
-        
+
         self._get_name()
         self.get_datasets()
         self.get_reports()
 
     def _get_name(self):
-        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups?$filter=contains(id,\'{self.id}\')', headers=self.tenant.token.get_headers())
+        r = requests.get(
+            f"https://api.powerbi.com/v1.0/myorg/groups?$filter=contains(id,'{self.id}')",
+            headers=self.tenant.token.get_headers(),
+        )
         json = handle_request(r)
 
-        self.name = json.get('value')[0]['name']
+        self.name = json.get("value")[0]["name"]
         return self.name
 
     def get_users_access(self):
@@ -51,10 +53,13 @@ class Workspace:
         :return: array of dictonaries, each representing a user
         """
 
-        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/users', headers=self.tenant.token.get_headers())
+        r = requests.get(
+            f"https://api.powerbi.com/v1.0/myorg/groups/{self.id}/users",
+            headers=self.tenant.token.get_headers(),
+        )
         json = handle_request(r)
 
-        self.users = json.get('value')
+        self.users = json.get("value")
         return self.users
 
     def grant_user_access(self, user_access):
@@ -62,9 +67,18 @@ class Workspace:
         Will intelligently handle both create and update scenarios.
         """
 
-        identifiers = [u.get('identifier') for u in self.get_users_access()] # list of emails/principal GUIDs
-        method = 'put' if user_access.get('identifier') in identifiers else 'post' # put/post based on whether user already exists
-        r = requests.request(method, f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/users', headers=self.tenant.token.get_headers(), json=user_access)
+        identifiers = [
+            u.get("identifier") for u in self.get_users_access()
+        ]  # list of emails/principal GUIDs
+        method = (
+            "put" if user_access.get("identifier") in identifiers else "post"
+        )  # put/post based on whether user already exists
+        r = requests.request(
+            method,
+            f"https://api.powerbi.com/v1.0/myorg/groups/{self.id}/users",
+            headers=self.tenant.token.get_headers(),
+            json=user_access,
+        )
         handle_request(r)
 
     def copy_permissions(self, reference_workspace):
@@ -82,10 +96,13 @@ class Workspace:
         :return: array of :class:`~Dataset` objects
         """
 
-        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/datasets', headers=self.tenant.token.get_headers())
+        r = requests.get(
+            f"https://api.powerbi.com/v1.0/myorg/groups/{self.id}/datasets",
+            headers=self.tenant.token.get_headers(),
+        )
         json = handle_request(r)
 
-        self.datasets = [Dataset(self, d) for d in json.get('value')]
+        self.datasets = [Dataset(self, d) for d in json.get("value")]
         return self.datasets
 
     def get_dataset(self, dataset_id):
@@ -97,7 +114,10 @@ class Workspace:
         :return: a :class:`~Dataset` object
         """
 
-        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/datasets/{dataset_id}', headers=self.tenant.token.get_headers())
+        r = requests.get(
+            f"https://api.powerbi.com/v1.0/myorg/groups/{self.id}/datasets/{dataset_id}",
+            headers=self.tenant.token.get_headers(),
+        )
         json = handle_request(r)
 
         return Dataset(self, json)
@@ -111,11 +131,14 @@ class Workspace:
         :return: a :class:`~Dataset` object (or ``None``)
         """
 
-        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/datasets', headers=self.tenant.token.get_headers())
+        r = requests.get(
+            f"https://api.powerbi.com/v1.0/myorg/groups/{self.id}/datasets",
+            headers=self.tenant.token.get_headers(),
+        )
         json = handle_request(r)
 
-        for r in json.get('value'):
-            if r.get('name') == dataset_name:
+        for r in json.get("value"):
+            if r.get("name") == dataset_name:
                 return Dataset(self, r)
 
     def get_reports(self):
@@ -124,10 +147,13 @@ class Workspace:
         :return: array of :class:`~Report` objects
         """
 
-        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/reports', headers=self.tenant.token.get_headers())
+        r = requests.get(
+            f"https://api.powerbi.com/v1.0/myorg/groups/{self.id}/reports",
+            headers=self.tenant.token.get_headers(),
+        )
         handle_request(r)
 
-        reports = r.json()['value']
+        reports = r.json()["value"]
         self.reports = [Report(self, r) for r in reports]
         return self.reports
 
@@ -140,7 +166,10 @@ class Workspace:
         :return: a :class:`~Report` object
         """
 
-        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/reports/{report_id}', headers=self.tenant.token.get_headers())
+        r = requests.get(
+            f"https://api.powerbi.com/v1.0/myorg/groups/{self.id}/reports/{report_id}",
+            headers=self.tenant.token.get_headers(),
+        )
         json = handle_request(r)
 
         return Report(self, json)
@@ -154,11 +183,14 @@ class Workspace:
         :return: a :class:`~Report` object (or ``None``)
         """
 
-        r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/reports', headers=self.tenant.token.get_headers())
+        r = requests.get(
+            f"https://api.powerbi.com/v1.0/myorg/groups/{self.id}/reports",
+            headers=self.tenant.token.get_headers(),
+        )
         json = handle_request(r)
 
-        for r in json.get('value'):
-            if r.get('name') == report_name:
+        for r in json.get("value"):
+            if r.get("name") == report_name:
                 return Report(self, r)
 
     def publish_file(self, filepath, name, skipReports=False, overwrite_reports=False):
@@ -171,36 +203,47 @@ class Workspace:
         :return: a tuple of arrays - first of :class:`~Dataset` objects, second of :class:`~Report` objects
         """
 
-        nameConflict = 'CreateOrOverwrite' if overwrite_reports else 'Ignore'
-        params = {'datasetDisplayName': name + '.pbix', 'nameConflict': nameConflict}
-        if skipReports: params['skipReport'] = 'true'
+        nameConflict = "CreateOrOverwrite" if overwrite_reports else "Ignore"
+        params = {"datasetDisplayName": name + ".pbix", "nameConflict": nameConflict}
+        if skipReports:
+            params["skipReport"] = "true"
 
         payload = {}
-        with open(filepath, 'rb') as f:
-            payload['file'] = open(filepath, 'rb')
+        with open(filepath, "rb") as f:
+            payload["file"] = open(filepath, "rb")
 
-        r = requests.post(f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/imports', params=params, headers=self.tenant.token.get_headers(), files=payload)
+        r = requests.post(
+            f"https://api.powerbi.com/v1.0/myorg/groups/{self.id}/imports",
+            params=params,
+            headers=self.tenant.token.get_headers(),
+            files=payload,
+        )
         json = handle_request(r)
-        import_id = json.get('id')
+        import_id = json.get("id")
 
         # Check whether import has finished, wait and retry if not
         while True:
-            r = requests.get(f'https://api.powerbi.com/v1.0/myorg/groups/{self.id}/imports/{import_id}', headers=self.tenant.token.get_headers())
+            r = requests.get(
+                f"https://api.powerbi.com/v1.0/myorg/groups/{self.id}/imports/{import_id}",
+                headers=self.tenant.token.get_headers(),
+            )
             json = handle_request(r)
-            import_status = json.get('importState')
+            import_status = json.get("importState")
 
-            if import_status == 'Succeeded':
-                datasets = [self.get_dataset(d.get('id')) for d in json.get('datasets')]
-                reports =  [self.get_report(r.get('id')) for r in json.get('reports')]
+            if import_status == "Succeeded":
+                datasets = [self.get_dataset(d.get("id")) for d in json.get("datasets")]
+                reports = [self.get_report(r.get("id")) for r in json.get("reports")]
 
                 return datasets, reports
 
-            elif import_status == 'Publishing':
+            elif import_status == "Publishing":
                 time.sleep(10)
                 continue
 
             else:
-                print(f'Import ERROR: {json.get("error").get("code")} ({json.get("error").get("message")})')
+                print(
+                    f'Import ERROR: {json.get("error").get("code")} ({json.get("error").get("message")})'
+                )
                 break
 
     def refresh_datasets(self, credentials=None, wait=True):
@@ -215,54 +258,74 @@ class Workspace:
             >>> creds = {}
             >>> creds['serverA.database.windows.net'] = {'username': 'db_username', 'password': 'db_password'}
             >>> creds['serverB.database.windows.net'] = {'token': 'oauth_token'}
-            
+
             >>> pbi_token = Token(f'https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token', 'https://analysis.windows.net/powerbi/api/.default', pbi_sp, pbi_sp_secret)
             >>> workspace = Workspace(workspace_id, pbi_token)
             >>> result = workspace.refresh_datasets(creds)
-            
+
             >>> result
             True
         """
 
         error = False
-        datasets = [d for d in self.datasets if 'Deployment Aid' not in d.name]
-        
+        datasets = [d for d in self.datasets if "Deployment Aid" not in d.name]
+
         for dataset in datasets:
             try:
-                if dataset.get_refresh_state() == 'Unknown': # Don't trigger refresh if model is already refreshing
-                    print(f'** [{dataset.name}] is already refreshing')
+                if (
+                    dataset.get_refresh_state() == "Unknown"
+                ):  # Don't trigger refresh if model is already refreshing
+                    print(f"** [{dataset.name}] is already refreshing")
                 else:
-                    print(f'** Reconfiguring [{dataset.name}]')
-                    dataset.take_ownership() # In case someone manually took control post deployment
+                    print(f"** Reconfiguring [{dataset.name}]")
+                    dataset.take_ownership()  # In case someone manually took control post deployment
 
                     if credentials:
-                        print(f'*** Reauthenticating data sources...') # Reauthenticate as tokens obtained during deployment will have expired
+                        print(
+                            f"*** Reauthenticating data sources..."
+                        )  # Reauthenticate as tokens obtained during deployment will have expired
                         dataset.authenticate(credentials)
 
-                    print(f'*** Starting refresh...') # We check back later for completion
+                    print(
+                        f"*** Starting refresh..."
+                    )  # We check back later for completion
                     dataset.trigger_refresh()
 
             except SystemExit as e:
-                print(f'!! ERROR. Triggering refresh failed for [{dataset.name}]. {e}')
+                print(f"!! ERROR. Triggering refresh failed for [{dataset.name}]. {e}")
                 error = True
 
         if wait:
-            print('* Waiting for models to finish refreshing...')
+            print("* Waiting for models to finish refreshing...")
             for dataset in datasets:
                 try:
-                    refresh_status = dataset.get_refresh_state(wait=True) # Wait for each refresh to complete
-                    if refresh_status == 'Completed':
-                        print(f'** Refresh complete for [{dataset.name}]')
+                    refresh_status = dataset.get_refresh_state(
+                        wait=True
+                    )  # Wait for each refresh to complete
+                    if refresh_status == "Completed":
+                        print(f"** Refresh complete for [{dataset.name}]")
                     else:
                         raise SystemExit(refresh_status)
 
                 except SystemExit as e:
-                    print(f'!! ERROR. Refresh failed for [{dataset.name}]. {e}')
+                    print(f"!! ERROR. Refresh failed for [{dataset.name}]. {e}")
                     error = True
 
             return not error
 
-    def deploy(self, dataset_filepath, report_filepaths, dataset_params=None, credentials=None, force_refresh=False, on_report_success=None, name_builder=_name_builder, name_comparator=_name_comparator, overwrite_reports=False, **kwargs):
+    def deploy(
+        self,
+        dataset_filepath,
+        report_filepaths,
+        dataset_params=None,
+        credentials=None,
+        force_refresh=False,
+        on_report_success=None,
+        name_builder=_name_builder,
+        name_comparator=_name_comparator,
+        overwrite_reports=False,
+        **kwargs,
+    ):
         """Publishes a single model and an collection of associated reports. Note, currently only database authentication is supported, using either SQL logins or oauth tokens.
 
         There is a requirement for a dummy report called 'Deployment Aid Report' to exist either in the publishing workspace (default) or in a separate 'config' workspace.
@@ -290,7 +353,7 @@ class Workspace:
             >>> pbi_token = Token(f'https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token', 'https://analysis.windows.net/powerbi/api/.default', pbi_sp, pbi_sp_secret)
             >>> workspace = Workspace(workspace_id, pbi_token)
             >>> result = workspace.deploy('path/to/model', report_paths, params, creds)
-            
+
             >>> result
             True
 
@@ -311,88 +374,114 @@ class Workspace:
         """
 
         # 1. Get dummy connections string from 'aid report' in config workspace
-        config_workspace = self.tenant.find_workspace(AID_WORKSPACE_NAME)
-        if config_workspace is None:
-            raise SystemExit('ERROR: Cannot find PBI Tools Config workspace')
-
-        aid_report = config_workspace.find_report(AID_REPORT_NAME) # Find aid report to get new dataset connection string
-        if aid_report is None:
-            raise SystemExit('ERROR: Cannot find Deployment Aid Report')
-
-        aid_model = config_workspace.find_dataset(AID_MODEL_NAME)
-        if aid_model is None:
-            raise SystemExit('ERROR: Cannot find Deployment Aid Model')
-
-        with open(AID_REPORT_NAME, 'wb') as report_file: # Get connection string from aid report
-            report_file.write(aid_report.download())
-        connection_string = get_connection_string(AID_REPORT_NAME)
+        aid_model, aid_report = self.tenant.get_deployment_aids()
+        connection_string = self.tenant.get_aid_connection_string()
 
         # 2. Publish dataset or get existing dataset (if unchanged and current)
         dataset_name = name_builder(dataset_filepath, **kwargs)
-        matching_datasets = [d for d in self.datasets if name_comparator(d.name, dataset_name, overwrite_reports)] # Look for existing dataset
+        matching_datasets = [
+            d
+            for d in self.datasets
+            if name_comparator(d.name, dataset_name, overwrite_reports=overwrite_reports)
+        ]  # Look for existing dataset
 
-        if not matching_datasets or force_refresh: # Only publish dataset if there isn't one already, or it's marked as needing a refresh
-            print(f'** Publishing dataset [{dataset_filepath}] as [{dataset_name}]...')
-            new_datasets, new_reports = self.publish_file(dataset_filepath, dataset_name, skipReports=True, overwrite_reports=overwrite_reports)
+        if (
+            not matching_datasets or force_refresh
+        ):  # Only publish dataset if there isn't one already, or it's marked as needing a refresh
+            print(f"** Publishing dataset [{dataset_filepath}] as [{dataset_name}]...")
+            new_datasets, new_reports = self.publish_file(
+                dataset_filepath,
+                dataset_name,
+                skipReports=True,
+                overwrite_reports=overwrite_reports,
+            )
             dataset = new_datasets.pop()
         else:
-            dataset = matching_datasets.pop() # Get the latest dataset (and remove from list of matches, which is deleted later)
-            print(f'** Using existing dataset [{dataset.name}]')
+            dataset = (
+                matching_datasets.pop()
+            )  # Get the latest dataset (and remove from list of matches, which is deleted later)
+            print(f"** Using existing dataset [{dataset.name}]")
 
         # 3. Update params and credentials, then refresh (unless current)
         refresh_state = dataset.get_refresh_state()
-        if refresh_state == 'Completed' and not overwrite_reports:
-            print('** Existing dataset valid')
+        if refresh_state == "Completed" and not overwrite_reports:
+            print("** Existing dataset valid")
         else:
-            if refresh_state != 'Unknown': # Unknown == refreshing; therefore either last refresh failed, or there has never been a refresh attempt
-                dataset.take_ownership() # Publishing does not change ownership, so make sure we own it before continuing
+            if (
+                refresh_state != "Unknown"
+            ):  # Unknown == refreshing; therefore either last refresh failed, or there has never been a refresh attempt
+                dataset.take_ownership()  # Publishing does not change ownership, so make sure we own it before continuing
 
-                print('*** Updating parameters...')
-                param_keys = [p['name'] for p in dataset.get_params()]
-                params = [{'name': k, 'newValue': v} for k, v in dataset_params.items() if k in param_keys] # Only try to update params that are defined for this dataset
-                if params: dataset.update_params({'updateDetails': params})
+                if dataset_params:
+                    print("*** Updating parameters...")
+                    param_keys = [p["name"] for p in dataset.get_params()]
+                    params = [
+                        {"name": k, "newValue": v}
+                        for k, v in dataset_params.items()
+                        if k in param_keys
+                    ]  # Only try to update params that are defined for this dataset
+                    if params:
+                        dataset.update_params({"updateDetails": params})
 
-                print('*** Authenticating...')
-                dataset.authenticate(credentials)
+                if credentials:
+                    print("*** Authenticating...")
+                    dataset.authenticate(credentials)
 
-                print('*** Triggering refresh') # We check back later for completion
+                print("*** Triggering refresh")  # We check back later for completion
                 dataset.trigger_refresh()
 
             # 4. Wait for refresh to complete (stop on error)
-            refresh_state = dataset.get_refresh_state(wait=True) # Wait for any dataset refreshes to finish before continuing
-            if refresh_state == 'Completed':
-                print('*** Dataset refreshed') # Don't report completed refresh if we used an existing dataset
+            refresh_state = dataset.get_refresh_state(
+                wait=True
+            )  # Wait for any dataset refreshes to finish before continuing
+            if refresh_state == "Completed":
+                print(
+                    "*** Dataset refreshed"
+                )  # Don't report completed refresh if we used an existing dataset
             else:
-                raise SystemExit(f'Refresh failed: {refresh_state}')
+                raise SystemExit(f"Refresh failed: {refresh_state}")
 
-        # 5. Publish reports (using dummy connection string initially)
-        for filepath in report_filepaths: # Import report files
+        # 5. Publish reports (using dummy connection string initially)
+        for filepath in report_filepaths:  # Import report files
             report_name = name_builder(filepath, **kwargs)
-            matching_reports = [r for r in self.reports if name_comparator(r.name, report_name, overwrite_reports)] # Look for existing reports
+            matching_reports = [
+                r
+                for r in self.reports
+                if name_comparator(r.name, report_name, overwrite_reports=overwrite_reports)
+            ]  # Look for existing reports
             if overwrite_reports:
-                for report in matching_reports: report.repoint(aid_model)
+                for report in matching_reports:
+                    report.repoint(aid_model)
 
-            print(f'** Publishing report [{filepath}] as [{report_name}]...') # Alter PBIX file with dummy dataset, in case dataset used during development has since been deleted (we repoint once on service)
+            print(
+                f"** Publishing report [{filepath}] as [{report_name}]..."
+            )  # Alter PBIX file with dummy dataset, in case dataset used during development has since been deleted (we repoint once on service)
             rebind_report(filepath, connection_string)
-            new_datasets, new_reports = self.publish_file(filepath, report_name, overwrite_reports=overwrite_reports)
+            new_datasets, new_reports = self.publish_file(
+                filepath, report_name, overwrite_reports=overwrite_reports
+            )
 
             # 6. Repoint to refreshed model and update Portals (if given)
             for report in new_reports:
-                report.repoint(dataset) # Once published, repoint from dummy to new dataset
+                report.repoint(
+                    dataset
+                )  # Once published, repoint from dummy to new dataset
                 if on_report_success:
                     try:
-                        on_report_success(report, **kwargs) # Perform any final post-deploy actions
+                        on_report_success(
+                            report, **kwargs
+                        )  # Perform any final post-deploy actions
                     except Exception as e:
-                        print(f'! WARNING. Error executing post-deploy steps. {e}')
+                        print(f"! WARNING. Error executing post-deploy steps. {e}")
 
             # 7. Delete old reports
             if not overwrite_reports:
                 for old_report in matching_reports:
-                    print(f'*** Deleting old report [{old_report.name}]')
+                    print(f"*** Deleting old report [{old_report.name}]")
                     old_report.delete()
 
         # 8. Delete old models
         if not overwrite_reports:
             for old_dataset in matching_datasets:
-                print(f'** Deleting old dataset [{old_dataset.name}]')
+                print(f"** Deleting old dataset [{old_dataset.name}]")
                 old_dataset.delete()

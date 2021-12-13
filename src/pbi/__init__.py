@@ -1,10 +1,10 @@
+from . import api
+
 from . import tools
-from .capacity import Capacity
-from .dataset import Dataset
-from .datasource import Datasource
-from .report import Report
-from .tenant import Tenant
+from . import deploy
 from .token import Token
-from .workspace import Workspace
+from .portal import Portal
+
 from . import _version
-__version__ = _version.get_versions()['version']
+
+__version__ = _version.get_versions()["version"]
