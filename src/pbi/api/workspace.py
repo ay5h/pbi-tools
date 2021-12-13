@@ -1,15 +1,11 @@
+import os
 import time
 import requests
 from os import path
 
 from .report import Report
 from .dataset import Dataset
-from pbi.tools import handle_request, get_connection_string, rebind_report
-
-AID_WORKSPACE_NAME = "Deployment Aid"
-AID_REPORT_NAME = "Deployment Aid Report"
-AID_MODEL_NAME = "Deployment Aid Model"
-
+from pbi.tools import handle_request, rebind_report
 
 def _name_builder(filepath, **kwargs):
     filename = path.basename(filepath)
@@ -378,32 +374,15 @@ class Workspace:
         """
 
         # 1. Get dummy connections string from 'aid report' in config workspace
-        config_workspace = self.tenant.find_workspace(AID_WORKSPACE_NAME)
-        if config_workspace is None:
-            raise SystemExit("ERROR: Cannot find PBI Tools Config workspace")
-
-        aid_report = config_workspace.find_report(
-            AID_REPORT_NAME
-        )  # Find aid report to get new dataset connection string
-        if aid_report is None:
-            raise SystemExit("ERROR: Cannot find Deployment Aid Report")
-
-        aid_model = config_workspace.find_dataset(AID_MODEL_NAME)
-        if aid_model is None:
-            raise SystemExit("ERROR: Cannot find Deployment Aid Model")
-
-        with open(
-            AID_REPORT_NAME, "wb"
-        ) as report_file:  # Get connection string from aid report
-            report_file.write(aid_report.download())
-        connection_string = get_connection_string(AID_REPORT_NAME)
+        aid_model, aid_report = self.tenant.get_deployment_aids()
+        connection_string = self.tenant.get_aid_connection_string()
 
         # 2. Publish dataset or get existing dataset (if unchanged and current)
         dataset_name = name_builder(dataset_filepath, **kwargs)
         matching_datasets = [
             d
             for d in self.datasets
-            if name_comparator(d.name, dataset_name, overwrite_reports)
+            if name_comparator(d.name, dataset_name, overwrite_reports=overwrite_reports)
         ]  # Look for existing dataset
 
         if (
@@ -433,18 +412,20 @@ class Workspace:
             ):  # Unknown == refreshing; therefore either last refresh failed, or there has never been a refresh attempt
                 dataset.take_ownership()  # Publishing does not change ownership, so make sure we own it before continuing
 
-                print("*** Updating parameters...")
-                param_keys = [p["name"] for p in dataset.get_params()]
-                params = [
-                    {"name": k, "newValue": v}
-                    for k, v in dataset_params.items()
-                    if k in param_keys
-                ]  # Only try to update params that are defined for this dataset
-                if params:
-                    dataset.update_params({"updateDetails": params})
+                if dataset_params:
+                    print("*** Updating parameters...")
+                    param_keys = [p["name"] for p in dataset.get_params()]
+                    params = [
+                        {"name": k, "newValue": v}
+                        for k, v in dataset_params.items()
+                        if k in param_keys
+                    ]  # Only try to update params that are defined for this dataset
+                    if params:
+                        dataset.update_params({"updateDetails": params})
 
-                print("*** Authenticating...")
-                dataset.authenticate(credentials)
+                if credentials:
+                    print("*** Authenticating...")
+                    dataset.authenticate(credentials)
 
                 print("*** Triggering refresh")  # We check back later for completion
                 dataset.trigger_refresh()
@@ -466,7 +447,7 @@ class Workspace:
             matching_reports = [
                 r
                 for r in self.reports
-                if name_comparator(r.name, report_name, overwrite_reports)
+                if name_comparator(r.name, report_name, overwrite_reports=overwrite_reports)
             ]  # Look for existing reports
             if overwrite_reports:
                 for report in matching_reports:

@@ -1,8 +1,11 @@
+import os
 import requests
 
 from .workspace import Workspace
 from pbi.token import Token
-from pbi.tools import handle_request
+from pbi.tools import handle_request, get_connection_string
+
+DEPLOYMENT_AID_NAME = "Deployment Aid"
 
 class Tenant:
     """An object representing an Azure tenant.
@@ -22,6 +25,48 @@ class Tenant:
 
     def _get_headers(self):
         return {"Authorization": f"Bearer {self.token.get_token()}"}
+
+    def set_config_workspace(self, workspace_id):
+        """Defines a workspace to be used for configuration, including deployment aids. Required before running deployment methods.
+        
+        :param workspace_id: GUID of workspace that contains the deployment aids
+        """
+
+        self.config_workspace = Workspace(self, workspace_id)
+
+    def get_deployment_aids(self):
+        """Looks for a deployment aid in the config workspace, returning it if found. Errors if config workspace or report not found.
+        
+        :return: (:class:`~Report`, :class:`~Report`) tuple
+        """
+
+        if not self.config_workspace:
+            raise SystemExit("ERROR: Config workspace not set. Missing tenant.set_config_workspace()?")
+
+        aid_model = self.config_workspace.find_dataset(DEPLOYMENT_AID_NAME)
+        aid_report = self.config_workspace.find_report(DEPLOYMENT_AID_NAME)
+        
+        if not aid_model or not aid_report:
+            raise SystemExit(f"ERROR: Deployment Aids not found. Looking for model and report called: {DEPLOYMENT_AID_NAME}")
+
+        return aid_model, aid_report
+
+    def get_aid_connection_string(self):
+        """Downloads the aid report and extracts the data source connection string from the PBIX file.
+        
+        :return: Power BI dataset connection string
+        """
+
+        aid_model, aid_report = self.get_deployment_aids()
+
+        with open(DEPLOYMENT_AID_NAME, "wb") as report_file:  # Get connection string from aid report
+            report_file.write(aid_report.download())
+        
+        connection_string = get_connection_string(DEPLOYMENT_AID_NAME)
+
+        os.remove(DEPLOYMENT_AID_NAME) # Remove temp aid report
+
+        return connection_string
 
     def get_workspaces(self):
         """Fetch a list of all workspaces that the user has access to.
