@@ -38,6 +38,8 @@ def deploy(
     config_workspace=None,
     release=None,
     overwrite_reports=False,
+    name_builder=_name_builder,
+    name_comparator=_name_comparator,
 ):
     error = False
     root, dirs, files = next(os.walk(pbi_root))  # Cycle top level folders only
@@ -84,8 +86,8 @@ def deploy(
                 credentials,
                 force_refresh=local_force_refresh,
                 on_report_success=on_report_success,
-                name_builder=_name_builder,
-                name_comparator=_name_comparator,
+                name_builder=name_builder,
+                name_comparator=name_comparator,
                 group=dir,
                 release=release,
                 config_workspace=config_workspace,

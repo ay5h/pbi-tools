@@ -1,10 +1,6 @@
 name: Bump Git tag (if on main), then publish Python distributions to PyPI Test and PyPI (if on main)
 
-on:
-  push:
-    branches:
-      - 'main'
-      - 'release/*'
+on: push
 
 jobs:
   build-n-publish:
