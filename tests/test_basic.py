@@ -2,7 +2,7 @@ import os
 import pytest
 
 from pbi.api import Tenant, Workspace
-from pbi import deploy
+from pbi.deploy import deploy
 
 @pytest.fixture(autouse=True)
 def change_test_dir(request):

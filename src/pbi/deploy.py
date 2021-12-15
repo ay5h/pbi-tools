@@ -1,9 +1,7 @@
 import os
 from .tools import check_file_modified
 
-MODEL_NAME = "Model.pbix"
 DELIMITER = " -- "
-
 
 def _name_builder(filepath, **kwargs):  # "(branch) -- group -- file -- release"
     filename = os.path.basename(filepath)
@@ -16,7 +14,6 @@ def _name_builder(filepath, **kwargs):  # "(branch) -- group -- file -- release"
         list(filter(None, components))
     )  # Concatenate components using delimiter, ignoring any empty components
 
-
 def _name_comparator(a, b, overwrite_reports=False):
     if overwrite_reports:
         return a == b  # If overwriting reports the names will share the same structure
@@ -26,10 +23,10 @@ def _name_comparator(a, b, overwrite_reports=False):
         a_components[:-1] == b_components[:-1]
     )  # Compare all except final component (which is the release)
 
-
 def deploy(
     pbi_root,
     workspace,
+    model_name="Model.pbix",
     dataset_params=None,
     credentials=None,
     force_refresh=None,
@@ -39,7 +36,7 @@ def deploy(
     release=None,
     overwrite_reports=False,
     name_builder=_name_builder,
-    name_comparator=_name_comparator,
+    name_comparator=_name_comparator
 ):
     error = False
     root, dirs, files = next(os.walk(pbi_root))  # Cycle top level folders only
@@ -47,7 +44,7 @@ def deploy(
         try:  # Allow other report groups to deploy, even if others fail
             # 1. Look for model file
             dataset_file = os.path.join(
-                root, dir, MODEL_NAME
+                root, dir, model_name
             )  # Expecting exactly one model
             if not os.path.exists(dataset_file):
                 print(f"! Warning: No model found in [{dir}]. Skipping folder.")
@@ -68,7 +65,7 @@ def deploy(
                     os.path.join(sub_root, f)
                     for f in sub_files
                     if os.path.splitext(f)[1] == ".pbix"
-                    and f != MODEL_NAME
+                    and f != model_name
                     and (
                         not cherry_picks
                         or f in cherry_picks
