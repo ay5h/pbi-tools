@@ -39,7 +39,7 @@ def deploy(
     release=None,
     overwrite_reports=False,
     name_builder=_name_builder,
-    name_comparator=_name_comparator,
+    name_comparator=_name_comparator
 ):
     error = False
     root, dirs, files = next(os.walk(pbi_root))  # Cycle top level folders only
