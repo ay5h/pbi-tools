@@ -1,9 +1,8 @@
 import os
 import pytest
 
-from pbi.api.tenant import Tenant
-from pbi.api.workspace import Workspace
-from pbi.deploy import deploy
+from pbi.api import Tenant, Workspace
+from pbi import deploy
 
 @pytest.fixture(autouse=True)
 def change_test_dir(request):
