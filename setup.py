@@ -3,8 +3,6 @@ from importlib.metadata import version
 
 setup(
     name="pbi-tools",
-    version=version("package-name"),
-#    cmdclass=versioneer.get_cmdclass(),
     package_dir={"": "src"},
     packages=find_packages(where="src"),
     license="MIT",
