@@ -26,7 +26,6 @@ def _name_comparator(a, b, overwrite_reports=False):
 def deploy(
     pbi_root,
     workspace,
-    model_name="Model.pbix",
     dataset_params=None,
     credentials=None,
     force_refresh=None,
@@ -35,6 +34,7 @@ def deploy(
     config_workspace=None,
     release=None,
     overwrite_reports=False,
+    model_name="Model.pbix",
     name_builder=_name_builder,
     name_comparator=_name_comparator
 ):
