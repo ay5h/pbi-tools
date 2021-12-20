@@ -8,7 +8,7 @@ setup(
     description="Power BI REST API wrapper and other tools",
     long_description=open("README.md").read(),
     use_scm_version={
-        "version_scheme": "release-branch-semver",
+        "version_scheme": "python-simplified-semver",
         "local_scheme": "no-local-version"
     },
     setup_requires=['setuptools_scm'],
