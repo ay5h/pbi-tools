@@ -1,8 +1,10 @@
-import time
 import json
-import requests
+import time
 from urllib.parse import urlparse
+
+import requests
 from pbi.tools import handle_request
+
 from .datasource import Datasource
 
 
@@ -50,6 +52,7 @@ class Dataset:
             connection = json.loads(datasource.connection_details)
             server = connection.get("server")
             url = connection.get("url")
+            extension = connection.get("extensionDataSourceKind")
 
             if server:  # Server-based connections (e.g. Azure Data Warehouse)
                 if server in credentials:
@@ -57,10 +60,12 @@ class Dataset:
                     cred = credentials.get(server)
 
                     if "token" in cred:
-                        datasource.update_credentials(token=cred["token"])
+                        datasource.update_credentials("OAuth2", token=cred["token"])
                     elif "username" in cred:
                         datasource.update_credentials(
-                            cred["username"], cred["password"]
+                            "Basic",
+                            username=cred["username"],
+                            password=cred["password"],
                         )
                 else:
                     print(
@@ -76,14 +81,28 @@ class Dataset:
                     cred = credentials.get(domain)
 
                     if "token" in cred:
-                        datasource.update_credentials(token=cred["token"])
+                        datasource.update_credentials("OAuth2", token=cred["token"])
                     elif "username" in cred:
                         datasource.update_credentials(
-                            cred["username"], cred["password"]
+                            "Basic",
+                            username=cred["username"],
+                            password=cred["password"],
                         )
                 else:
                     print(
                         f"*** No credentials provided for {domain}. Using existing credentials."
+                    )
+
+            elif extension == "Databricks":
+                extension_path = json.loads(connection["extensionDataSourcePath"])
+                cluster = extension_path.get("httpPath")
+                print(f"*** Updating credentials for {cluster}")
+                cred = credentials.get(cluster)
+                if cluster in credentials:
+                    datasource.update_credentials("Key", token=cred["token"])
+                else:
+                    print(
+                        f"*** No credentials provided for {cluster}. Using existing credentials."
                     )
 
             else:
