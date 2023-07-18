@@ -1,5 +1,7 @@
 import json
+
 import requests
+
 from pbi.tools import handle_request
 
 
@@ -19,35 +21,35 @@ class Datasource:
         self.gateway_id = datasource["gatewayId"]
         self.connection_details = datasource["connectionDetails"]
 
-    def update_credentials(self, username=None, password=None, token=None):
+    def update_credentials(self, auth_type, username=None, password=None, token=None):
         """Use the provided credentials to reauthenticate datasources connected to this dataset. If any of the provided credentials do not match the data source they will be skipped.
 
-        Currently, only database credentials are supported using either SQL logins or oauth tokens.
+        Currently, either database (using either SQL logins or oauth tokens) or databricks (using PAT tokens) credentials are supported.
 
         Warning: If you use the oauth method, then authentiaction will only remain valid until the token expires - you may need to reauthenticate before refreshing; the token may expire before the refresh has completed in large models.
-
+        :param type: the type of authentication method to be used by the PBI service: OAuth2, Basic or Key
         :param username: username value if using SQL authentication; the ``password`` must also be provided
         :param password: password value if using SQL authentication; the ``username`` must also be provided
         :param token: valid oauth token (an alternative to passing username and password)
         """
 
-        if token:
-            auth = "OAuth2"
+        if auth_type == "OAuth2":
             credentials = {
                 "credentialData": [{"name": "accessToken", "value": token.get_token()}]
             }
-        else:
-            auth = "Basic"
+        elif auth_type == "Basic":
             credentials = {
                 "credentialData": [
                     {"name": "username", "value": username},
                     {"name": "password", "value": password},
                 ]
             }
+        elif auth_type == "Key":
+            credentials = {"credentialData": [{"name": "key", "value": token}]}
 
         payload = {
             "credentialDetails": {
-                "credentialType": auth,
+                "credentialType": auth_type,
                 "credentials": json.dumps(credentials),
                 "encryptedConnection": "Encrypted",
                 "encryptionAlgorithm": "None",
